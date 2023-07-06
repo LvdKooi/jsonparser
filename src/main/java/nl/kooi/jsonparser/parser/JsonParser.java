@@ -33,7 +33,11 @@ public class JsonParser {
                 var token = tokenOptional.get();
                 tokenStack.push(token);
                 switch (token) {
-                    case BRACE_OPEN -> state = state.addInitialMainObject();
+                    case BRACE_OPEN -> {
+                        if (!Set.of(WRITING, FINISHED).contains(state.valueFieldStatus())) {
+                            state = state.addInitialMainObject();
+                        }
+                    }
                     case D_QUOTE -> {
 
                         if (state.identifierStatus() == NOT_STARTED) {
@@ -58,7 +62,7 @@ public class JsonParser {
 
                     case SEMI_COLON -> state = state.moveValueFieldToNotStartedState();
                     case COMMA -> {
-                        if (state.identifierStatus() != NOT_STARTED) {
+                        if (state.valueFieldStatus() != NOT_STARTED) {
                             state = state.moveValueFieldToFinishState();
                         }
                     }

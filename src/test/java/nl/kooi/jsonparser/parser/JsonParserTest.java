@@ -26,6 +26,16 @@ class JsonParserTest {
     }
 
     @Test
+    void oneStringFieldWithTokenCharacters() {
+        var result = JsonParser.parse("{\"name\": \"{[,:]}\"}");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("name");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo("{[,:]}");
+    }
+
+    @Test
     void oneNumberField() {
         var result = JsonParser.parse("{\"age\": 36}");
 
