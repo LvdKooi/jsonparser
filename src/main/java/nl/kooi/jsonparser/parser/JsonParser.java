@@ -26,7 +26,7 @@ public class JsonParser {
             if (tokenOptional.isPresent()) {
                 var token = tokenOptional.get();
                 switch (token) {
-                    case BRACE_OPEN -> state = new WriterState(new JsonObject(null), state.identifier(), state.stringField());
+                    case BRACE_OPEN -> state = state.addInitialMainObject();
                     case D_QUOTE -> {
 
                         if (state.identifierStatus() == WriterStatus.NOT_STARTED) {
@@ -39,7 +39,7 @@ public class JsonParser {
                         if (state.identifierStatus() == WriterStatus.FINISHED && state.stringFieldStatus() == WriterStatus.NOT_STARTED) {
                             state = state.moveStringFieldToWritingState();
                         } else if (state.stringFieldStatus() == WriterStatus.WRITING) {
-                            state = state.writeNode();
+                            state = state.moveStringFieldToFinishState();
                         }
                     }
                     case BRACE_CLOSED -> {
@@ -58,12 +58,10 @@ public class JsonParser {
                 if (state.stringFieldStatus() == WriterStatus.WRITING) {
                     state = state.writeCharacterToStringField(character);
                 }
-
             }
         }
 
         return null;
-
     }
 
     private static Optional<Token> maybeToken(String character) {

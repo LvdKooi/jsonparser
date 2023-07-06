@@ -25,6 +25,26 @@ class JsonParserTest {
         assertThat(result.jsonNodes()[0].content()).isEqualTo("Laurens");
     }
 
+    @Test
+    void oneNumberField() {
+        var result = JsonParser.parse("{\"age\": 36}");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("age");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(36);
+    }
+
+    @Test
+    void oneBooleanField() {
+        var result = JsonParser.parse("{\"married\": false}");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("married");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(false);
+    }
+
 
     @Test
     void twoStringFields() {

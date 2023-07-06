@@ -3,15 +3,24 @@ package nl.kooi.jsonparser.json;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static nl.kooi.jsonparser.json.WriterStatus.FINISHED;
-import static nl.kooi.jsonparser.json.WriterStatus.WRITING;
+import static nl.kooi.jsonparser.json.WriterStatus.*;
 
 public record WriterState(JsonObject mainObject,
                           Pair<String, WriterStatus> identifier,
-                          Pair<String, WriterStatus> stringField) {
+                          Pair<String, WriterStatus> stringField,
+                          Pair<Boolean, WriterStatus> booleanField,
+                          Pair<Integer, WriterStatus> numberField) {
 
     public WriterState() {
-        this(null, new Pair<>("", WriterStatus.NOT_STARTED), new Pair<>("", WriterStatus.NOT_STARTED));
+        this(null, new Pair<>("", WriterStatus.NOT_STARTED), null, null, null);
+    }
+
+    public WriterState(JsonObject mainObject, Pair<String, WriterStatus> identifier, Pair<String, WriterStatus> stringField) {
+        this(mainObject, identifier, stringField, null, null);
+    }
+
+    public WriterState addInitialMainObject() {
+        return new WriterState(new JsonObject(null), this.identifier, this.stringField);
     }
 
     public WriterStatus identifierStatus() {
@@ -19,7 +28,7 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterStatus stringFieldStatus() {
-        return this.stringField.right();
+        return this.stringField == null ? NOT_STARTED : this.stringField.right();
     }
 
     public WriterState writeCharacterToIdentifier(String character) {
@@ -40,14 +49,6 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState moveStringFieldToFinishState() {
-        return new WriterState(this.mainObject, this.identifier, new Pair<>(this.stringField.left(), FINISHED));
-    }
-
-    public WriterState moveStringFieldToWritingState() {
-        return new WriterState(this.mainObject, this.identifier, new Pair<>(this.stringField.left(), WRITING));
-    }
-
-    public WriterState writeNode() {
 
         var jsonNodes = mainObject.jsonNodes();
 
@@ -60,5 +61,9 @@ public record WriterState(JsonObject mainObject,
         }
 
         return new WriterState(new JsonObject(jsonNodes), new Pair<>("", WriterStatus.NOT_STARTED), new Pair<>("", WriterStatus.NOT_STARTED));
+    }
+
+    public WriterState moveStringFieldToWritingState() {
+        return new WriterState(this.mainObject, this.identifier, new Pair<>("", WRITING));
     }
 }
