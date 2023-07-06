@@ -57,4 +57,19 @@ class JsonParserTest {
         assertThat(result.jsonNodes()[1].identifier()).isEqualTo("sign");
         assertThat(result.jsonNodes()[1].content()).isEqualTo("Taurus");
     }
+
+    @Test
+    void threeFieldsOfDifferentTypes() {
+        var result = JsonParser.parse("{\"name\": \"Laurens\",\"age\": 36, \"married\": true}");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(3);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("name");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo("Laurens");
+        assertThat(result.jsonNodes()[1].identifier()).isEqualTo("age");
+        assertThat(result.jsonNodes()[1].content()).isEqualTo(36);
+        assertThat(result.jsonNodes()[2].identifier()).isEqualTo("married");
+        assertThat(result.jsonNodes()[2].content()).isEqualTo(true);
+    }
+
 }
