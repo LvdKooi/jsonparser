@@ -1,13 +1,16 @@
 package nl.kooi.jsonparser.parser;
 
 
-import nl.kooi.jsonparser.json.JsonObject;
-import nl.kooi.jsonparser.json.Token;
-import nl.kooi.jsonparser.json.WriterState;
-import nl.kooi.jsonparser.json.WriterStatus;
+import nl.kooi.jsonparser.json.*;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
+import java.util.Stack;
+
+import static nl.kooi.jsonparser.json.FieldType.STRING;
+import static nl.kooi.jsonparser.json.WriterStatus.FINISHED;
+import static nl.kooi.jsonparser.json.WriterStatus.WRITING;
 
 public class JsonParser {
 
@@ -18,6 +21,7 @@ public class JsonParser {
     private static JsonObject handleComplexJsonString(String objectString) {
         var characters = objectString.split("");
         var state = new WriterState();
+        var tokenStack = new Stack<Token>();
 
         for (var character : characters) {
 
@@ -25,6 +29,7 @@ public class JsonParser {
 
             if (tokenOptional.isPresent()) {
                 var token = tokenOptional.get();
+                tokenStack.push(token);
                 switch (token) {
                     case BRACE_OPEN -> state = state.addInitialMainObject();
                     case D_QUOTE -> {
@@ -36,17 +41,21 @@ public class JsonParser {
                             continue;
                         }
 
-                        if (state.identifierStatus() == WriterStatus.FINISHED && state.stringFieldStatus() == WriterStatus.NOT_STARTED) {
-                            state = state.moveStringFieldToWritingState();
-                        } else if (state.stringFieldStatus() == WriterStatus.WRITING) {
-                            state = state.moveStringFieldToFinishState();
+                        if (state.identifierStatus() == FINISHED && !Set.of(WRITING, FINISHED).contains(state.valueFieldStatus())) {
+                            state = state.moveValueFieldToWritingState(STRING);
+                        } else if (state.valueFieldStatus() == WriterStatus.WRITING ) {
+                            state = state.moveValueFieldToFinishState();
                         }
                     }
                     case BRACE_CLOSED -> {
+                        if (state.valueFieldStatus() == WriterStatus.WRITING) {
+                            state = state.moveValueFieldToFinishState();
+                        }
                         return state.mainObject();
                     }
 
-                    case COMMA, SEMI_COLON, SQ_BRACKET_OPEN, SQ_BRACKET_CLOSED -> {
+                    case SEMI_COLON -> state = state.moveValueFieldToNotStartedState();
+                    case COMMA, SQ_BRACKET_OPEN, SQ_BRACKET_CLOSED -> {
                     }
 
                 }
@@ -55,8 +64,9 @@ public class JsonParser {
                     state = state.writeCharacterToIdentifier(character);
                 }
 
-                if (state.stringFieldStatus() == WriterStatus.WRITING) {
-                    state = state.writeCharacterToStringField(character);
+                if (state.identifierStatus() == FINISHED && state.valueFieldStatus() != FINISHED && (!character.equals(" ") || tokenStack.peek() != Token.SEMI_COLON))
+                {
+                    state = state.writeCharacterToValueField(character);
                 }
             }
         }
