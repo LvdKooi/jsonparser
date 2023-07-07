@@ -2,6 +2,7 @@ package nl.kooi.jsonparser.json;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
@@ -34,8 +35,10 @@ public record WriterState(JsonObject mainObject,
         return new WriterState(this.mainObject, newStack, this.currentFieldType, this.identifier, this.valueField);
     }
 
-    public Token getLastToken() {
-        return this.tokenStack.peek();
+    public Optional<Token> getLastToken() {
+        return Optional.ofNullable(this.tokenStack)
+                .filter(stack -> !stack.isEmpty())
+                .map(Stack::peek);
     }
 
     public WriterStatus identifierStatus() {

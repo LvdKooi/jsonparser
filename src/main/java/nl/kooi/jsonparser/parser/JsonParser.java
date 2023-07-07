@@ -9,10 +9,12 @@ import nl.kooi.jsonparser.json.WriterStatus;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static nl.kooi.jsonparser.json.FieldType.STRING;
+import static nl.kooi.jsonparser.json.Token.*;
 import static nl.kooi.jsonparser.json.WriterStatus.*;
 
 public class JsonParser {
@@ -21,26 +23,28 @@ public class JsonParser {
         var state = new WriterState();
 
         for (var character : objectString.split("")) {
-            var tokenOptional = maybeToken(character);
+            var tokenOptional = maybeToken(character, state);
+
             state = tokenOptional.isPresent() ?
-                    handleToken(tokenOptional.get(), state) :
+                    handleToken(tokenOptional.get(), character, state) :
                     writeCharacterToState(state, character);
         }
 
         return state.mainObject();
     }
 
-    private static WriterState handleToken(Token token, WriterState state) {
-        UnaryOperator<WriterState> function = switch (token) {
+    private static WriterState handleToken(Token token, String character, WriterState state) {
+        UnaryOperator<WriterState> handler = switch (token) {
             case BRACE_OPEN -> JsonParser::handleOpenBrace;
             case D_QUOTE -> JsonParser::handleDoubleQuote;
             case BRACE_CLOSED -> JsonParser::handleClosingBrace;
             case SEMI_COLON -> JsonParser::handleSemiColon;
             case COMMA -> JsonParser::handleComma;
-            case SQ_BRACKET_OPEN, SQ_BRACKET_CLOSED -> currentState -> currentState;
+            case TEXT -> writerState -> writeCharacterToState(writerState, character);
+            default -> currentState -> currentState;
         };
 
-        return handleToken(token, state, function);
+        return handleToken(token, state, handler);
     }
 
     private static WriterState writeCharacterToState(WriterState state, String character) {
@@ -50,11 +54,23 @@ public class JsonParser {
 
         if (hasStatus(state::identifierStatus, FINISHED) &&
                 hasStatusNotIn(state::valueFieldStatus, FINISHED) &&
-                (!isSpace(character) || state.getLastToken() != Token.SEMI_COLON)) {
+                (!isSpace(character) || state.getLastToken().filter(is(SEMI_COLON)).isEmpty())) {
             return state.writeCharacterToValueField(character);
         }
 
         return state;
+    }
+
+    private static Predicate<Token> is(Token token) {
+        return t -> t == token;
+    }
+
+    private static Predicate<Token> isIn(Token... tokens) {
+        return t -> Set.of(tokens).contains(t);
+    }
+
+    private static Predicate<Token> notIn(Token... tokens) {
+        return t -> !Set.of(tokens).contains(t);
     }
 
     private static WriterState handleSemiColon(WriterState state) {
@@ -109,10 +125,20 @@ public class JsonParser {
         return state;
     }
 
-    private static Optional<Token> maybeToken(String character) {
-        return Arrays.stream(Token.values())
+    private static Optional<Token> maybeToken(String character, WriterState state) {
+        var lastToken = state.getLastToken();
+        var tokenOptional = Arrays.stream(Token.values())
                 .filter(token -> token.getMatchingStrings().stream().anyMatch(tokenString -> tokenString.equals(character)))
                 .findFirst();
+
+        if (lastToken.filter(isIn(D_QUOTE, TEXT)).isPresent() &&
+                (tokenOptional.isEmpty() || tokenOptional
+                        .filter(isIn(BRACE_CLOSED, SEMI_COLON, D_QUOTE, COMMA).negate())
+                        .isPresent())) {
+            return Optional.of(TEXT);
+        }
+
+        return tokenOptional;
     }
 
     private static boolean hasStatus(Supplier<WriterStatus> statusSupplier, WriterStatus match) {

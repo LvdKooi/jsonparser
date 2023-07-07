@@ -11,7 +11,10 @@ public enum Token {
     SQ_BRACKET_OPEN("["),
     SQ_BRACKET_CLOSED("]"),
     BRACE_OPEN("{"),
-    BRACE_CLOSED("}");
+    BRACE_CLOSED("}"),
+    TEXT(),
+    BOOLEAN(),
+    NUMBER();
 
     private final Set<String> matchingStrings;
 
