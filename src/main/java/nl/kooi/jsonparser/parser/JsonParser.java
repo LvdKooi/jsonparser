@@ -78,7 +78,11 @@ public class JsonParser {
     private static WriterState handleToken(Token token,
                                            WriterState state,
                                            UnaryOperator<WriterState> writerStateFunction) {
-        var updatedState = state.addToken(token);
+        var updatedState = state.getLastToken()
+                .filter(tok -> token == tok)
+                .filter(tok -> tok == TEXT)
+                .isPresent() ? state : state.addToken(token);
+
         return writerStateFunction.apply(updatedState);
     }
 
