@@ -27,23 +27,24 @@ public class JsonParser {
         for (var character : characters) {
 
             var tokenOptional = maybeToken(character);
-
-            if (tokenOptional.isPresent()) {
-                var token = tokenOptional.get();
-                state = switch (token) {
-                    case BRACE_OPEN -> handleOpenBrace(state);
-                    case D_QUOTE -> handleDoubleQuote(state);
-                    case BRACE_CLOSED -> handleClosingBrace(state);
-                    case SEMI_COLON -> handleSemiColon(state);
-                    case COMMA -> handleComma(state);
-                    case SQ_BRACKET_OPEN, SQ_BRACKET_CLOSED -> state;
-                };
-            } else {
-                state = writeCharacterToState(state, character);
-            }
+            state = tokenOptional.isPresent() ?
+                    handleToken(tokenOptional.get(), state) :
+                    writeCharacterToState(state, character);
         }
 
         return state.mainObject();
+    }
+
+
+    private static WriterState handleToken(Token token, WriterState state) {
+        return switch (token) {
+            case BRACE_OPEN -> handleOpenBrace(state);
+            case D_QUOTE -> handleDoubleQuote(state);
+            case BRACE_CLOSED -> handleClosingBrace(state);
+            case SEMI_COLON -> handleSemiColon(state);
+            case COMMA -> handleComma(state);
+            case SQ_BRACKET_OPEN, SQ_BRACKET_CLOSED -> state;
+        };
     }
 
     private static WriterState writeCharacterToState(WriterState state, String character) {
