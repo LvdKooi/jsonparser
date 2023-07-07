@@ -9,7 +9,6 @@ import nl.kooi.jsonparser.json.WriterStatus;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Stack;
 import java.util.function.Supplier;
 
 import static nl.kooi.jsonparser.json.FieldType.STRING;
@@ -24,7 +23,6 @@ public class JsonParser {
     private static JsonObject handleComplexJsonString(String objectString) {
         var characters = objectString.split("");
         var state = new WriterState();
-        var tokenStack = new Stack<Token>();
 
         for (var character : characters) {
 
@@ -32,74 +30,82 @@ public class JsonParser {
 
             if (tokenOptional.isPresent()) {
                 var token = tokenOptional.get();
-                tokenStack.push(token);
                 state = switch (token) {
                     case BRACE_OPEN -> handleOpenBrace(state);
                     case D_QUOTE -> handleDoubleQuote(state);
                     case BRACE_CLOSED -> handleClosingBrace(state);
-                    case SEMI_COLON -> state.moveValueFieldToNotStartedState();
+                    case SEMI_COLON -> handleSemiColon(state);
                     case COMMA -> handleComma(state);
                     case SQ_BRACKET_OPEN, SQ_BRACKET_CLOSED -> state;
                 };
             } else {
-                state = writeCharacterToState(state, tokenStack, character);
+                state = writeCharacterToState(state, character);
             }
         }
 
         return state.mainObject();
     }
 
-    private static WriterState writeCharacterToState(WriterState state, Stack<Token> tokenStack, String character) {
+    private static WriterState writeCharacterToState(WriterState state, String character) {
         if (hasStatus(state::identifierStatus, WRITING)) {
             return state.writeCharacterToIdentifier(character);
         }
 
-        if (hasStatus(state::identifierStatus, FINISHED) && hasStatusNotIn(state::valueFieldStatus, FINISHED) && (!character.equals(" ") || tokenStack.peek() != Token.SEMI_COLON)) {
+        if (hasStatus(state::identifierStatus, FINISHED) && hasStatusNotIn(state::valueFieldStatus, FINISHED) && (!character.equals(" ") || state.tokenStack().peek() != Token.SEMI_COLON)) {
             return state.writeCharacterToValueField(character);
         }
 
         return state;
     }
 
+    private static WriterState handleSemiColon(WriterState state) {
+        var updatedState = state.addTokenToStack(Token.SEMI_COLON);
+        return updatedState.moveValueFieldToNotStartedState();
+    }
+
 
     private static WriterState handleComma(WriterState state) {
-        if (hasStatusNotIn(state::valueFieldStatus, NOT_STARTED)) {
-            return state.moveValueFieldToFinishState();
+        var updatedState = state.addTokenToStack(Token.COMMA);
+        if (hasStatusNotIn(updatedState::valueFieldStatus, NOT_STARTED)) {
+            return updatedState.moveValueFieldToFinishState();
         }
 
-        return state;
+        return updatedState;
     }
 
     private static WriterState handleDoubleQuote(WriterState state) {
-        if (hasStatus(state::identifierStatus, NOT_STARTED)) {
-            return state.moveIdentifierToWritingState();
-        } else if (hasStatus(state::identifierStatus, WRITING)) {
-            return state.moveIdentifierToFinishState();
+        var updatedState = state.addTokenToStack(Token.D_QUOTE);
+        if (hasStatus(updatedState::identifierStatus, NOT_STARTED)) {
+            return updatedState.moveIdentifierToWritingState();
+        } else if (hasStatus(updatedState::identifierStatus, WRITING)) {
+            return updatedState.moveIdentifierToFinishState();
         }
 
-        if (hasStatus(state::identifierStatus, FINISHED) && hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED)) {
-            return state.moveValueFieldToWritingState(STRING);
-        } else if (hasStatus(state::valueFieldStatus, WRITING)) {
-            return state.moveValueFieldToFinishState();
+        if (hasStatus(updatedState::identifierStatus, FINISHED) && hasStatusNotIn(updatedState::valueFieldStatus, WRITING, FINISHED)) {
+            return updatedState.moveValueFieldToWritingState(STRING);
+        } else if (hasStatus(updatedState::valueFieldStatus, WRITING)) {
+            return updatedState.moveValueFieldToFinishState();
         }
 
-        return state;
+        return updatedState;
     }
 
     private static WriterState handleOpenBrace(WriterState state) {
-        if (hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED)) {
-            return state.addInitialMainObject();
+        var updatedState = state.addTokenToStack(Token.BRACE_OPEN);
+        if (hasStatusNotIn(updatedState::valueFieldStatus, WRITING, FINISHED)) {
+            return updatedState.addInitialMainObject();
         }
 
-        return state;
+        return updatedState;
     }
 
     private static WriterState handleClosingBrace(WriterState state) {
-        if (hasStatus(state::valueFieldStatus, WRITING)) {
-            return state.moveValueFieldToFinishState();
+        var updatedState = state.addTokenToStack(Token.BRACE_CLOSED);
+        if (hasStatus(updatedState::valueFieldStatus, WRITING)) {
+            return updatedState.moveValueFieldToFinishState();
         }
 
-        return state;
+        return updatedState;
     }
 
     private static Optional<Token> maybeToken(String character) {
