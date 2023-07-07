@@ -12,7 +12,8 @@ public enum Token {
     BRACE_CLOSED("}", true),
     TEXT(null, false),
     BOOLEAN(null, false),
-    NUMBER(null, false);
+    NUMBER(null, false),
+    SPACE(" ", false);
 
     private final String matchingString;
     private final boolean jsonFormatToken;

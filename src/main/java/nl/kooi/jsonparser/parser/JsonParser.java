@@ -7,6 +7,7 @@ import nl.kooi.jsonparser.json.WriterState;
 import nl.kooi.jsonparser.json.WriterStatus;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -100,19 +101,13 @@ public class JsonParser {
     }
 
     private static WriterState handleOpenBrace(WriterState state) {
-        if (hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED)) {
-            return state.addInitialMainObject();
-        }
-
-        return state;
+        return hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED) ?
+                state.addInitialMainObject() : state;
     }
 
     private static WriterState handleClosingBrace(WriterState state) {
-        if (hasStatus(state::valueFieldStatus, WRITING)) {
-            return state.moveValueFieldToFinishState();
-        }
-
-        return state;
+        return hasStatus(state::valueFieldStatus, WRITING) ?
+                state.moveValueFieldToFinishState() : state;
     }
 
     private static Optional<Token> maybeToken(String character, WriterState state) {
@@ -120,13 +115,18 @@ public class JsonParser {
             return Optional.of(TEXT);
         }
 
+        if (!state.writingTextField() && SPACE.getMatchingString().equals(character)) {
+            return Optional.of(SPACE);
+        }
+
+
         var tokenOptional = Arrays.stream(Token.values())
+                .filter(Objects::nonNull)
                 .filter(token -> character.equals(token.getMatchingString()))
                 .findFirst();
 
 
-        if (state.getLastToken().filter(isIn(SEMI_COLON, NUMBER, BOOLEAN)).isPresent() &&
-                !isSpace(character) &&
+        if (state.getLastToken().filter(isIn(SEMI_COLON, SPACE, NUMBER, BOOLEAN)).isPresent() &&
                 tokenOptional
                         .filter(Token::isJsonFormatToken)
                         .isEmpty()) {
@@ -143,10 +143,6 @@ public class JsonParser {
 
     private static boolean hasStatusNotIn(Supplier<WriterStatus> statusSupplier, WriterStatus... statuses) {
         return !Set.of(statuses).contains(statusSupplier.get());
-    }
-
-    private static boolean isSpace(String character) {
-        return " ".equals(character);
     }
 
     private static Predicate<Token> isIn(Token... tokens) {
