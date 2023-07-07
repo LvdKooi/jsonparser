@@ -28,7 +28,7 @@ public class JsonParser {
 
             state = tokenOptional.isPresent() ?
                     handleToken(tokenOptional.get(), character, state) :
-                    writeCharacterToState(state, character);
+                    state;
         }
 
         return state.mainObject();
@@ -129,11 +129,11 @@ public class JsonParser {
                 .findFirst();
 
 
-        if (lastToken.filter(isIn(SEMI_COLON)).isPresent() &&
+        if (lastToken.filter(isIn(SEMI_COLON, NUMBER, BOOLEAN)).isPresent() &&
                 !isSpace(character) &&
                 tokenOptional
-                        .filter(token -> !token.isJsonFormatToken())
-                        .isPresent()) {
+                        .filter(Token::isJsonFormatToken)
+                        .isEmpty()) {
 
             if (isNumber(character)) {
                 return Optional.of(NUMBER);
