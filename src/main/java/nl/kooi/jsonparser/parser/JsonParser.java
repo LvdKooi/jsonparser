@@ -120,24 +120,18 @@ public class JsonParser {
             return Optional.of(TEXT);
         }
 
-        var lastToken = state.getLastToken();
-
         var tokenOptional = Arrays.stream(Token.values())
                 .filter(token -> character.equals(token.getMatchingString()))
                 .findFirst();
 
 
-        if (lastToken.filter(isIn(SEMI_COLON, NUMBER, BOOLEAN)).isPresent() &&
+        if (state.getLastToken().filter(isIn(SEMI_COLON, NUMBER, BOOLEAN)).isPresent() &&
                 !isSpace(character) &&
                 tokenOptional
                         .filter(Token::isJsonFormatToken)
                         .isEmpty()) {
 
-            if (isNumber(character)) {
-                return Optional.of(NUMBER);
-            } else {
-                return Optional.of(BOOLEAN);
-            }
+            return isNumber(character) ? Optional.of(NUMBER) : Optional.of(BOOLEAN);
         }
 
         return tokenOptional;
