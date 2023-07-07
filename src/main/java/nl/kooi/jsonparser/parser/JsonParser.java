@@ -30,7 +30,6 @@ public class JsonParser {
         return state.mainObject();
     }
 
-
     private static WriterState handleToken(Token token, WriterState state) {
         UnaryOperator<WriterState> function = switch (token) {
             case BRACE_OPEN -> JsonParser::handleOpenBrace;
@@ -49,7 +48,9 @@ public class JsonParser {
             return state.writeCharacterToIdentifier(character);
         }
 
-        if (hasStatus(state::identifierStatus, FINISHED) && hasStatusNotIn(state::valueFieldStatus, FINISHED) && (!character.equals(" ") || state.tokenStack().peek() != Token.SEMI_COLON)) {
+        if (hasStatus(state::identifierStatus, FINISHED) &&
+                hasStatusNotIn(state::valueFieldStatus, FINISHED) &&
+                (!isSpace(character) || state.getLastToken() != Token.SEMI_COLON)) {
             return state.writeCharacterToValueField(character);
         }
 
@@ -69,8 +70,10 @@ public class JsonParser {
         return status;
     }
 
-    private static WriterState handleToken(Token token, WriterState state, UnaryOperator<WriterState> writerStateFunction) {
-        var updatedState = state.addTokenToStack(token);
+    private static WriterState handleToken(Token token,
+                                           WriterState state,
+                                           UnaryOperator<WriterState> writerStateFunction) {
+        var updatedState = state.addToken(token);
         return writerStateFunction.apply(updatedState);
     }
 
@@ -118,5 +121,9 @@ public class JsonParser {
 
     private static boolean hasStatusNotIn(Supplier<WriterStatus> statusSupplier, WriterStatus... statuses) {
         return !Set.of(statuses).contains(statusSupplier.get());
+    }
+
+    private static boolean isSpace(String character) {
+        return " ".equals(character);
     }
 }

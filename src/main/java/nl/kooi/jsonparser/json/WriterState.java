@@ -27,11 +27,15 @@ public record WriterState(JsonObject mainObject,
         return new WriterState(new JsonObject(null), this.tokenStack, this.identifier, this.valueField);
     }
 
-    public WriterState addTokenToStack(Token token) {
+    public WriterState addToken(Token token) {
         var newStack = this.tokenStack.stream().collect(Collectors.toCollection(Stack::new));
         newStack.add(token);
 
         return new WriterState(this.mainObject, newStack, this.currentFieldType, this.identifier, this.valueField);
+    }
+
+    public Token getLastToken() {
+        return this.tokenStack.peek();
     }
 
     public WriterStatus identifierStatus() {
