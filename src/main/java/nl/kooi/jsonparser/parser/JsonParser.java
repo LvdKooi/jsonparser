@@ -53,9 +53,7 @@ public class JsonParser {
             return state.writeCharacterToIdentifier(character);
         }
 
-        if (hasStatus(state::identifierStatus, FINISHED) &&
-                hasStatusNotIn(state::valueFieldStatus, FINISHED) &&
-                (!isSpace(character) || state.getLastToken().filter(isIn(SEMI_COLON)).isEmpty())) {
+        if (hasStatus(state::identifierStatus, FINISHED)) {
             return state.writeCharacterToValueField(character);
         }
 

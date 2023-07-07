@@ -27,12 +27,12 @@ class JsonParserTest {
 
     @Test
     void oneStringFieldWithTokenCharacters() {
-        var result = JsonParser.parse("{\"name\": \"{[,:]}\"}");
+        var result = JsonParser.parse("{\"name\": \"{[,true false:]}\"}");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("name");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo("{[,:]}");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo("{[,true false:]}");
     }
 
     @Test
