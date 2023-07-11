@@ -14,6 +14,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import static nl.kooi.jsonparser.json.FieldType.ARRAY;
 import static nl.kooi.jsonparser.json.FieldType.STRING;
 import static nl.kooi.jsonparser.json.Token.*;
 import static nl.kooi.jsonparser.json.WriterStatus.*;
@@ -67,12 +68,12 @@ public class JsonParser {
         return state.moveValueFieldToNotStartedState();
     }
 
-    private static WriterState handleComma(WriterState status) {
-        if (hasStatusNotIn(status::valueFieldStatus, NOT_STARTED)) {
-            return status.moveValueFieldToFinishState();
+    private static WriterState handleComma(WriterState state) {
+        if (hasStatusNotIn(state::valueFieldStatus, NOT_STARTED) && state.currentFieldType() != ARRAY) {
+            return state.moveValueFieldToFinishState();
         }
 
-        return status;
+        return state;
     }
 
     private static WriterState handleToken(Token token,
@@ -87,7 +88,8 @@ public class JsonParser {
     }
 
     private static WriterState handleDoubleQuote(WriterState state) {
-        var updatedState = state.receiveDoubleQuote();
+
+        var updatedState = state.currentFieldType() != ARRAY ? state.receiveDoubleQuote() : state;
 
         if (hasStatus(updatedState::identifierStatus, NOT_STARTED)) {
             return updatedState.moveIdentifierToWritingState();
@@ -95,9 +97,10 @@ public class JsonParser {
             return updatedState.moveIdentifierToFinishState();
         }
 
-        if (hasStatus(updatedState::identifierStatus, FINISHED) && hasStatusNotIn(updatedState::valueFieldStatus, WRITING, FINISHED)) {
+        if (hasStatus(updatedState::identifierStatus, FINISHED) &&
+                hasStatusNotIn(updatedState::valueFieldStatus, WRITING, FINISHED)) {
             return updatedState.moveValueFieldToWritingState(STRING);
-        } else if (hasStatus(updatedState::valueFieldStatus, WRITING)) {
+        } else if (hasStatus(updatedState::valueFieldStatus, WRITING) && state.currentFieldType() != ARRAY) {
             return updatedState.moveValueFieldToFinishState();
         }
 
@@ -134,7 +137,6 @@ public class JsonParser {
         if (!state.writingTextField() && SPACE.getMatchingString().equals(character)) {
             return Optional.of(SPACE);
         }
-
 
         var tokenOptional = Arrays.stream(Token.values())
                 .filter(Objects::nonNull)

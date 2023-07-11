@@ -82,6 +82,16 @@ class JsonParserTest {
     }
 
     @Test
+    void anArrayFieldWithEmptyArrays() {
+        var result = JsonParser.parse("{\"children\": [[],[],[],[]]}");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(Collections.emptyList());
+    }
+
+    @Test
     void aStringArrayField() {
         var result = JsonParser.parse("{\"childeren\": [\"Anthony\", \"Marvin\"]}");
 
