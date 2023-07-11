@@ -43,6 +43,8 @@ public class JsonParser {
             case SEMI_COLON -> JsonParser::handleSemiColon;
             case COMMA -> JsonParser::handleComma;
             case TEXT, BOOLEAN, NUMBER -> writerState -> writeCharacterToState(writerState, character);
+            case SQ_BRACKET_OPEN -> JsonParser::handleOpenSquareBracket;
+            case SQ_BRACKET_CLOSED -> JsonParser::handleClosedSquareBracket;
             default -> currentState -> currentState;
         };
 
@@ -61,11 +63,9 @@ public class JsonParser {
         return state;
     }
 
-
     private static WriterState handleSemiColon(WriterState state) {
         return state.moveValueFieldToNotStartedState();
     }
-
 
     private static WriterState handleComma(WriterState status) {
         if (hasStatusNotIn(status::valueFieldStatus, NOT_STARTED)) {
@@ -110,6 +110,18 @@ public class JsonParser {
     }
 
     private static WriterState handleClosingBrace(WriterState state) {
+        return finishValueField(state);
+    }
+
+    private static WriterState handleOpenSquareBracket(WriterState state) {
+        return state.createArrayContentField();
+    }
+
+    private static WriterState handleClosedSquareBracket(WriterState state) {
+        return finishValueField(state);
+    }
+
+    private static WriterState finishValueField(WriterState state) {
         return hasStatus(state::valueFieldStatus, WRITING) ?
                 state.moveValueFieldToFinishState() : state;
     }
@@ -155,7 +167,7 @@ public class JsonParser {
 
     private static boolean isNumber(String character) {
         try {
-            Double.valueOf(character);
+            Integer.valueOf(character);
             return true;
         } catch (NumberFormatException exc) {
             return false;

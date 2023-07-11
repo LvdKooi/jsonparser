@@ -6,8 +6,7 @@ import java.util.Optional;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import static nl.kooi.jsonparser.json.FieldType.STRING;
-import static nl.kooi.jsonparser.json.FieldType.UNKNOWN;
+import static nl.kooi.jsonparser.json.FieldType.*;
 import static nl.kooi.jsonparser.json.WriterStatus.*;
 
 public record WriterState(JsonObject mainObject,
@@ -18,11 +17,11 @@ public record WriterState(JsonObject mainObject,
                           boolean writingTextField) {
 
     public WriterState() {
-        this(null, new Stack<>(), FieldType.UNKNOWN, new Pair<>("", WriterStatus.NOT_STARTED), new Pair<>("", WriterStatus.NOT_STARTED), false);
+        this(null, new Stack<>(), FieldType.UNKNOWN, new Pair<>("", WriterStatus.NOT_STARTED), new Pair<>(new Object(), WriterStatus.NOT_STARTED), false);
     }
 
-    public WriterState(JsonObject mainObject, Stack<Token> tockenStack, Pair<String, WriterStatus> identifier, Pair<?, WriterStatus> stringField, boolean receivedDoubleQuote) {
-        this(mainObject, tockenStack, FieldType.UNKNOWN, identifier, stringField, receivedDoubleQuote);
+    public WriterState(JsonObject mainObject, Stack<Token> tokenStack, Pair<String, WriterStatus> identifier, Pair<?, WriterStatus> stringField, boolean receivedDoubleQuote) {
+        this(mainObject, tokenStack, FieldType.UNKNOWN, identifier, stringField, receivedDoubleQuote);
     }
 
     public WriterState addInitialMainObject() {
@@ -59,7 +58,27 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState writeCharacterToValueField(String character) {
-        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new Pair<>(((String) this.valueField.left()).concat(character), WRITING), this.writingTextField);
+        return updateValueField(concatValueField(valueField.left(), character));
+    }
+
+    public WriterState createArrayContentField() {
+        return updateValueField(new ArrayList<>(), ARRAY);
+    }
+
+    private WriterState updateValueField(Object newObjectToBeAdded) {
+        return updateValueField(newObjectToBeAdded, this.currentFieldType);
+    }
+
+    private WriterState updateValueField(Object newObjectToBeAdded, FieldType fieldType) {
+        return new WriterState(this.mainObject, this.tokenStack, fieldType, this.identifier, new Pair<>(newObjectToBeAdded, WRITING), this.writingTextField);
+    }
+
+    private static String concatValueField(Object currentValue, String character) {
+        return Optional.ofNullable(currentValue)
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .map(str -> str.concat(character))
+                .orElse(character);
     }
 
     public WriterState moveIdentifierToWritingState() {
@@ -79,7 +98,7 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState moveValueFieldToNotStartedState() {
-        return new WriterState(this.mainObject, this.tokenStack, UNKNOWN, this.identifier, new Pair<>("", NOT_STARTED), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, UNKNOWN, this.identifier, new Pair<>(new Object(), NOT_STARTED), this.writingTextField);
     }
 
     private WriterState flushNode() {
@@ -99,7 +118,7 @@ public record WriterState(JsonObject mainObject,
     }
 
     private JsonNode createJsonNodeOfCorrectType(JsonNode jsonNode) {
-        if (currentFieldType == STRING) {
+        if (currentFieldType == STRING || currentFieldType == ARRAY) {
             return jsonNode;
         }
 

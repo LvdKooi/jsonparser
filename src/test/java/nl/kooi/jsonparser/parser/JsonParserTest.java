@@ -1,8 +1,9 @@
 package nl.kooi.jsonparser.parser;
 
 import nl.kooi.jsonparser.json.JsonObject;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -69,8 +70,18 @@ class JsonParserTest {
         assertThat(result.jsonNodes()[1].content()).isEqualTo("Taurus");
     }
 
+
     @Test
-    @Disabled
+    void anArrayFieldWithEmptyArray() {
+        var result = JsonParser.parse("{\"children\": []}");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(Collections.emptyList());
+    }
+
+    @Test
     void aStringArrayField() {
         var result = JsonParser.parse("{\"childeren\": [\"Anthony\", \"Marvin\"]}");
 
@@ -81,7 +92,6 @@ class JsonParserTest {
     }
 
     @Test
-    @Disabled
     void aNumberArrayField() {
         var result = JsonParser.parse("{\"ages\": [12, 9]}");
 
@@ -92,7 +102,6 @@ class JsonParserTest {
     }
 
     @Test
-    @Disabled
     void aBooleanArrayField() {
         var result = JsonParser.parse("{\"bools\": [true, false, true]}");
 
