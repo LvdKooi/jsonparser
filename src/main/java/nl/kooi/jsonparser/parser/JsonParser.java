@@ -109,7 +109,7 @@ public class JsonParser {
         }
 
         if (state.currentFieldType() == ARRAY) {
-            return updatedState.addValueToArray(STRING);
+            return updatedState.addValueToArray();
         }
 
         return updatedState;
