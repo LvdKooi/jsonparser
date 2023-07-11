@@ -73,10 +73,6 @@ public class JsonParser {
             return state.moveValueFieldToFinishState();
         }
 
-        if (state.currentFieldType() == ARRAY) {
-            return state.addValueToArray();
-        }
-
         return state;
     }
 
@@ -108,6 +104,10 @@ public class JsonParser {
             return updatedState.moveValueFieldToFinishState();
         }
 
+        if (state.currentFieldType() == ARRAY) {
+            return updatedState.addValueToArray();
+        }
+
         return updatedState;
     }
 
@@ -125,7 +125,7 @@ public class JsonParser {
     }
 
     private static WriterState handleClosedSquareBracket(WriterState state) {
-        return finishValueField(state);
+        return state.moveValueFieldToFinishState();
     }
 
     private static WriterState finishValueField(WriterState state) {

@@ -79,7 +79,7 @@ public record WriterState(JsonObject mainObject,
     }
 
     private WriterState updateValueField(Object newObjectToBeAdded, FieldType fieldType) {
-        return new WriterState(this.mainObject, this.tokenStack, fieldType, this.identifier, new FieldState<>(newObjectToBeAdded, this.currentValue.fieldType(), WRITING), this.currentArray, this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType != ARRAY ? fieldType : ARRAY, this.identifier, new FieldState<>(newObjectToBeAdded, this.currentValue.fieldType(), WRITING), this.currentArray, this.writingTextField);
     }
 
     public WriterState moveIdentifierToWritingState() {
@@ -102,7 +102,7 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState moveValueFieldToWritingState(FieldType fieldType) {
-        return new WriterState(this.mainObject, this.tokenStack, fieldType, this.identifier, new FieldState<>("", fieldType, WRITING), this.currentArray, this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>("", fieldType, WRITING), this.currentArray, this.writingTextField);
     }
 
     public WriterState moveValueFieldToNotStartedState() {
@@ -112,7 +112,7 @@ public record WriterState(JsonObject mainObject,
     private WriterState flushNode() {
         var jsonNodes = mainObject.jsonNodes();
 
-        var node = createJsonNodeOfCorrectType(new JsonNode(identifier.value(), currentValue.value()));
+        var node = createJsonNodeOfCorrectType(new JsonNode(identifier.value(), currentFieldType == ARRAY ? currentArray :  currentValue.value()));
 
         if (jsonNodes == null) {
             jsonNodes = new JsonNode[]{node};

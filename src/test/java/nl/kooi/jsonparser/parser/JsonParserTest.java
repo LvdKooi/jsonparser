@@ -4,6 +4,7 @@ import nl.kooi.jsonparser.json.JsonObject;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -93,12 +94,12 @@ class JsonParserTest {
 
     @Test
     void aStringArrayField() {
-        var result = JsonParser.parse("{\"childeren\": [\"Anthony\", \"Marvin\"]}");
+        var result = JsonParser.parse("{\"children\": [\"Anthony\", \"Marvin\"]}");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("childeren");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(new String[]{"Anthony, Marvin"});
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of("Anthony", "Marvin"));
     }
 
     @Test
@@ -107,7 +108,7 @@ class JsonParserTest {
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("childeren");
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("ages");
         assertThat(result.jsonNodes()[0].content()).isEqualTo(new Integer[]{12, 9});
     }
 
