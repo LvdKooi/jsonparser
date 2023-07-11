@@ -103,13 +103,23 @@ class JsonParserTest {
     }
 
     @Test
-    void aNumberArrayField() {
+    void aNumberArrayFieldOfIntegers() {
         var result = JsonParser.parse("{\"ages\": [12, 9]}");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("ages");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(new Integer[]{12, 9});
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(12, 9));
+    }
+
+    @Test
+    void aNumberArrayFieldOfDoubles() {
+        var result = JsonParser.parse("{\"weights\": [12.99, 9.87]}");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("weights");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(12.99, 9.87));
     }
 
     @Test

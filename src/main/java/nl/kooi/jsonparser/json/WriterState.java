@@ -136,7 +136,7 @@ public record WriterState(JsonObject mainObject,
         var numberList = arrayList
                 .stream()
                 .filter(this::isNumber)
-                .map(Double::valueOf)
+                .map(this::handleNumberType)
                 .toList();
 
         var booleanList = arrayList
@@ -198,6 +198,18 @@ public record WriterState(JsonObject mainObject,
         }
 
         return false;
+    }
+
+    private Number handleNumberType(String numberString) {
+        if (numberString == null) {
+            return null;
+        }
+
+        try {
+            return Integer.valueOf(numberString);
+        } catch (NumberFormatException exc) {
+            return Double.valueOf(numberString);
+        }
     }
 
     private boolean isBoolean(JsonNode jsonNode) {
