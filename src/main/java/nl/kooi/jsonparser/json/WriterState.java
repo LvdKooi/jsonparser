@@ -51,7 +51,7 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState receiveDoubleQuote() {
-        return new WriterState(this.mainObject, this.tokenStack,this.currentFieldType, this.identifier, this.valueField, !this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, this.valueField, !this.writingTextField);
     }
 
     public WriterState writeCharacterToIdentifier(String character) {
@@ -103,8 +103,12 @@ public record WriterState(JsonObject mainObject,
             return jsonNode;
         }
 
-        if (isNumber(jsonNode)) {
+        if (isInteger(jsonNode)) {
             return new JsonNode(jsonNode.identifier(), Integer.valueOf(((String) jsonNode.content()).trim()));
+        }
+
+        if (isDouble(jsonNode)) {
+            return new JsonNode(jsonNode.identifier(), Double.valueOf(((String) jsonNode.content()).trim()));
         }
 
         if (isBoolean(jsonNode)) {
@@ -114,7 +118,20 @@ public record WriterState(JsonObject mainObject,
         throw new UnsupportedOperationException("Other types than String, Boolean or Number are not supported yet");
     }
 
-    private boolean isNumber(JsonNode jsonNode) {
+    private boolean isDouble(JsonNode jsonNode) {
+        if (currentFieldType != STRING) {
+            try {
+                Double.valueOf(((String) jsonNode.content()).trim());
+                return true;
+            } catch (NumberFormatException exc) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isInteger(JsonNode jsonNode) {
         if (currentFieldType != STRING) {
             try {
                 Integer.valueOf(((String) jsonNode.content()).trim());

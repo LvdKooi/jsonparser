@@ -1,6 +1,7 @@
 package nl.kooi.jsonparser.parser;
 
 import nl.kooi.jsonparser.json.JsonObject;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -37,12 +38,12 @@ class JsonParserTest {
 
     @Test
     void oneNumberField() {
-        var result = JsonParser.parse("{\"age\": 36}");
+        var result = JsonParser.parse("{\"weight\": 79.85}");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("age");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(36);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("weight");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(79.85);
     }
 
     @Test
@@ -66,6 +67,39 @@ class JsonParserTest {
         assertThat(result.jsonNodes()[0].content()).isEqualTo("Laurens");
         assertThat(result.jsonNodes()[1].identifier()).isEqualTo("sign");
         assertThat(result.jsonNodes()[1].content()).isEqualTo("Taurus");
+    }
+
+    @Test
+    @Disabled
+    void aStringArrayField() {
+        var result = JsonParser.parse("{\"childeren\": [\"Anthony\", \"Marvin\"]}");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("childeren");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(new String[]{"Anthony, Marvin"});
+    }
+
+    @Test
+    @Disabled
+    void aNumberArrayField() {
+        var result = JsonParser.parse("{\"ages\": [12, 9]}");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("childeren");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(new Integer[]{12, 9});
+    }
+
+    @Test
+    @Disabled
+    void aBooleanArrayField() {
+        var result = JsonParser.parse("{\"bools\": [true, false, true]}");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("bools");
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(new Boolean[]{true, false, true});
     }
 
     @Test

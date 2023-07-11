@@ -135,7 +135,7 @@ public class JsonParser {
                         .filter(Token::isJsonFormatToken)
                         .isEmpty()) {
 
-            return isNumber(character) ? Optional.of(NUMBER) : Optional.of(BOOLEAN);
+            return isNumber(character) || isDecimalPoint(character) ? Optional.of(NUMBER) : Optional.of(BOOLEAN);
         }
 
         return tokenOptional;
@@ -155,11 +155,14 @@ public class JsonParser {
 
     private static boolean isNumber(String character) {
         try {
-            Integer.valueOf(character);
+            Double.valueOf(character);
             return true;
         } catch (NumberFormatException exc) {
             return false;
         }
     }
 
+    private static boolean isDecimalPoint(String character) {
+        return ".".equals(character);
+    }
 }
