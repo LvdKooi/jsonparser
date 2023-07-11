@@ -73,6 +73,10 @@ public class JsonParser {
             return state.moveValueFieldToFinishState();
         }
 
+        if (state.currentFieldType() == ARRAY) {
+            return state.addValueToArray();
+        }
+
         return state;
     }
 
@@ -89,7 +93,7 @@ public class JsonParser {
 
     private static WriterState handleDoubleQuote(WriterState state) {
 
-        var updatedState = state.currentFieldType() != ARRAY ? state.receiveDoubleQuote() : state;
+        var updatedState = state.receiveDoubleQuote();
 
         if (hasStatus(updatedState::identifierStatus, NOT_STARTED)) {
             return updatedState.moveIdentifierToWritingState();
