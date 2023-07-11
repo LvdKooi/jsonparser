@@ -119,7 +119,7 @@ class JsonParserTest {
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("bools");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(new Boolean[]{true, false, true});
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(true, false, true));
     }
 
     @Test

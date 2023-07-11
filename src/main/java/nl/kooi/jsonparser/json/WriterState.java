@@ -1,9 +1,6 @@
 package nl.kooi.jsonparser.json;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Stack;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static nl.kooi.jsonparser.json.FieldType.*;
@@ -14,7 +11,7 @@ public record WriterState(JsonObject mainObject,
                           FieldType currentFieldType,
                           FieldState<String> identifier,
                           FieldState<?> currentValue,
-                          ArrayList<Object> currentArray,
+                          ArrayState currentArray,
                           boolean writingTextField) {
 
     public WriterState() {
@@ -71,7 +68,7 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState createArrayContentField() {
-        return new WriterState(this.mainObject, this.tokenStack, ARRAY, this.identifier, this.currentValue, new ArrayList<>(), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, ARRAY, this.identifier, this.currentValue, ArrayState.initialType(), this.writingTextField);
     }
 
     private WriterState updateValueField(Object newObjectToBeAdded) {
@@ -94,11 +91,17 @@ public record WriterState(JsonObject mainObject,
         return flushNode();
     }
 
-    public WriterState addValueToArray() {
-        var newArray = new ArrayList<>(this.currentArray);
-        newArray.add(this.currentValue.value());
+    public WriterState addValueToArray(FieldType fieldType) {
+        var newArray = new ArrayList<>(this.currentArray.value());
+        newArray.add(this.currentValue.value().toString());
 
-        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>(new Object(), this.currentValue.fieldType(), WriterStatus.NOT_STARTED), newArray, this.writingTextField);
+        var arrayState = new ArrayState(fieldType, newArray);
+
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>(new Object(), this.currentValue.fieldType(), WriterStatus.NOT_STARTED), arrayState, this.writingTextField);
+    }
+
+    public WriterState addValueToArray() {
+        return addValueToArray(this.currentArray.fieldType());
     }
 
     public WriterState moveValueFieldToWritingState(FieldType fieldType) {
@@ -112,7 +115,7 @@ public record WriterState(JsonObject mainObject,
     private WriterState flushNode() {
         var jsonNodes = mainObject.jsonNodes();
 
-        var node = createJsonNodeOfCorrectType(new JsonNode(identifier.value(), currentFieldType == ARRAY ? currentArray :  currentValue.value()));
+        var node = currentFieldType == ARRAY ? createJsonNodeOfCorrectArrayType(identifier.value(), currentArray.value(), currentArray.fieldType()) : createJsonNodeOfCorrectType(new JsonNode(identifier.value(), currentValue.value()));
 
         if (jsonNodes == null) {
             jsonNodes = new JsonNode[]{node};
@@ -125,8 +128,34 @@ public record WriterState(JsonObject mainObject,
         return new WriterState(new JsonObject(jsonNodes), this.tokenStack, FieldState.identifier("", WriterStatus.NOT_STARTED), new FieldState<>(new Object(), UNKNOWN, WriterStatus.NOT_STARTED), false);
     }
 
+    private JsonNode createJsonNodeOfCorrectArrayType(String identifier, List<String> arrayList, FieldType type) {
+        if (type == STRING || arrayList.isEmpty()) {
+            return new JsonNode(identifier, arrayList);
+        }
+
+        var numberList = arrayList
+                .stream()
+                .filter(this::isNumber)
+                .map(Double::valueOf)
+                .toList();
+
+        var booleanList = arrayList
+                .stream()
+                .filter(this::isBoolean)
+                .map(Boolean::valueOf)
+                .toList();
+
+
+        if (numberList.isEmpty()) {
+            return new JsonNode(identifier, booleanList);
+        } else {
+            return new JsonNode(identifier, numberList);
+        }
+
+    }
+
     private JsonNode createJsonNodeOfCorrectType(JsonNode jsonNode) {
-        if (currentFieldType == STRING || currentFieldType == ARRAY) {
+        if (currentFieldType == STRING) {
             return jsonNode;
         }
 
@@ -178,6 +207,21 @@ public record WriterState(JsonObject mainObject,
         }
 
         return false;
+    }
+
+    private boolean isBoolean(String booleanString) {
+        return "true".equals(booleanString) || "false".equals(booleanString);
+
+    }
+
+
+    private boolean isNumber(String numberString) {
+        try {
+            Double.valueOf(numberString.trim());
+            return true;
+        } catch (NumberFormatException exc) {
+            return false;
+        }
     }
 
 }

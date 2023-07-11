@@ -73,6 +73,10 @@ public class JsonParser {
             return state.moveValueFieldToFinishState();
         }
 
+        if (state.currentFieldType() == ARRAY && state.currentValue().fieldType() != STRING) {
+            return state.addValueToArray();
+        }
+
         return state;
     }
 
@@ -105,7 +109,7 @@ public class JsonParser {
         }
 
         if (state.currentFieldType() == ARRAY) {
-            return updatedState.addValueToArray();
+            return updatedState.addValueToArray(STRING);
         }
 
         return updatedState;
@@ -125,7 +129,9 @@ public class JsonParser {
     }
 
     private static WriterState handleClosedSquareBracket(WriterState state) {
-        return state.moveValueFieldToFinishState();
+        return hasStatus(state.currentValue()::status, WRITING) ?
+                state.addValueToArray().moveValueFieldToFinishState() :
+                state.moveValueFieldToFinishState();
     }
 
     private static WriterState finishValueField(WriterState state) {
@@ -148,7 +154,7 @@ public class JsonParser {
                 .findFirst();
 
 
-        if (state.getLastToken().filter(isIn(SEMI_COLON, SPACE, NUMBER, BOOLEAN)).isPresent() &&
+        if (state.getLastToken().filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN)).isPresent() &&
                 tokenOptional
                         .filter(Token::isJsonFormatToken)
                         .isEmpty()) {
