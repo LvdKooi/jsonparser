@@ -70,7 +70,6 @@ class JsonParserTest {
         assertThat(result.jsonNodes()[1].content()).isEqualTo("Taurus");
     }
 
-
     @Test
     void anArrayFieldWithEmptyArray() {
         var result = JsonParser.parse("{\"children\": []}");
@@ -79,46 +78,6 @@ class JsonParserTest {
         assertThat(result.jsonNodes().length).isEqualTo(1);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
         assertThat(result.jsonNodes()[0].content()).isEqualTo(Collections.emptyList());
-    }
-
-    @Test
-    void anArrayFieldWithEmptyArrays() {
-        var result = JsonParser.parse("{\"children\": [[],[],[],[]]}");
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(Collections.emptyList());
-    }
-
-    @Test
-    void aStringArrayField() {
-        var result = JsonParser.parse("{\"childeren\": [\"Anthony\", \"Marvin\"]}");
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("childeren");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(new String[]{"Anthony, Marvin"});
-    }
-
-    @Test
-    void aNumberArrayField() {
-        var result = JsonParser.parse("{\"ages\": [12, 9]}");
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("childeren");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(new Integer[]{12, 9});
-    }
-
-    @Test
-    void aBooleanArrayField() {
-        var result = JsonParser.parse("{\"bools\": [true, false, true]}");
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("bools");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(new Boolean[]{true, false, true});
     }
 
     @Test

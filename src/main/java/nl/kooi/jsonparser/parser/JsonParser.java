@@ -14,7 +14,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-import static nl.kooi.jsonparser.json.FieldType.ARRAY;
 import static nl.kooi.jsonparser.json.FieldType.STRING;
 import static nl.kooi.jsonparser.json.Token.*;
 import static nl.kooi.jsonparser.json.WriterStatus.*;
@@ -69,7 +68,7 @@ public class JsonParser {
     }
 
     private static WriterState handleComma(WriterState state) {
-        if (hasStatusNotIn(state::valueFieldStatus, NOT_STARTED) && state.currentFieldType() != ARRAY) {
+        if (hasStatusNotIn(state::valueFieldStatus, NOT_STARTED)) {
             return state.moveValueFieldToFinishState();
         }
 
@@ -89,7 +88,7 @@ public class JsonParser {
 
     private static WriterState handleDoubleQuote(WriterState state) {
 
-        var updatedState = state.currentFieldType() != ARRAY ? state.receiveDoubleQuote() : state;
+        var updatedState = state.receiveDoubleQuote();
 
         if (hasStatus(updatedState::identifierStatus, NOT_STARTED)) {
             return updatedState.moveIdentifierToWritingState();
@@ -100,7 +99,7 @@ public class JsonParser {
         if (hasStatus(updatedState::identifierStatus, FINISHED) &&
                 hasStatusNotIn(updatedState::valueFieldStatus, WRITING, FINISHED)) {
             return updatedState.moveValueFieldToWritingState(STRING);
-        } else if (hasStatus(updatedState::valueFieldStatus, WRITING) && state.currentFieldType() != ARRAY) {
+        } else if (hasStatus(updatedState::valueFieldStatus, WRITING)) {
             return updatedState.moveValueFieldToFinishState();
         }
 
