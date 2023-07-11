@@ -133,17 +133,18 @@ class JsonParserTest {
     }
 
     @Test
-    void threeFieldsOfDifferentTypes() {
-        var result = JsonParser.parse("{\"name\": \"Laurens\",\"age\": 36, \"married\": true}");
+    void fourFieldsOfDifferentTypes() {
+        var result = JsonParser.parse("{\"name\": \"Laurens\",\"age\": 36, \"children\": [\"Anthony\", \"Marvin\"], \"married\": true}");
 
         assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(3);
+        assertThat(result.jsonNodes().length).isEqualTo(4);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("name");
         assertThat(result.jsonNodes()[0].content()).isEqualTo("Laurens");
         assertThat(result.jsonNodes()[1].identifier()).isEqualTo("age");
         assertThat(result.jsonNodes()[1].content()).isEqualTo(36);
-        assertThat(result.jsonNodes()[2].identifier()).isEqualTo("married");
-        assertThat(result.jsonNodes()[2].content()).isEqualTo(true);
+        assertThat(result.jsonNodes()[2].identifier()).isEqualTo("children");
+        assertThat(result.jsonNodes()[2].content()).isEqualTo(List.of("Anthony", "Marvin"));
+        assertThat(result.jsonNodes()[3].identifier()).isEqualTo("married");
+        assertThat(result.jsonNodes()[3].content()).isEqualTo(true);
     }
-
 }

@@ -226,7 +226,6 @@ public record WriterState(JsonObject mainObject,
 
     }
 
-
     private boolean isNumber(String numberString) {
         try {
             Double.valueOf(numberString.trim());
@@ -235,5 +234,4 @@ public record WriterState(JsonObject mainObject,
             return false;
         }
     }
-
 }
