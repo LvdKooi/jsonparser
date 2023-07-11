@@ -13,15 +13,15 @@ public record WriterState(JsonObject mainObject,
                           Stack<Token> tokenStack,
                           FieldType currentFieldType,
                           FieldState<String> identifier,
-                          Pair<?, WriterStatus> currentValue,
+                          FieldState<?> currentValue,
                           boolean writingTextField) {
 
     public WriterState() {
-        this(null, new Stack<>(), FieldType.UNKNOWN, FieldState.forStringField("", WriterStatus.NOT_STARTED), new Pair<>(new Object(), WriterStatus.NOT_STARTED), false);
+        this(null, new Stack<>(), FieldType.UNKNOWN, FieldState.identifier("", WriterStatus.NOT_STARTED), new FieldState<>(new Object(), UNKNOWN, WriterStatus.NOT_STARTED), false);
     }
 
-    public WriterState(JsonObject mainObject, Stack<Token> tokenStack, FieldState<String> identifier, Pair<?, WriterStatus> stringField, boolean receivedDoubleQuote) {
-        this(mainObject, tokenStack, FieldType.UNKNOWN, identifier, stringField, receivedDoubleQuote);
+    public WriterState(JsonObject mainObject, Stack<Token> tokenStack, FieldState<String> identifier, FieldState<?> currentValue, boolean receivedDoubleQuote) {
+        this(mainObject, tokenStack, FieldType.UNKNOWN, identifier, currentValue, receivedDoubleQuote);
     }
 
     public WriterState addInitialMainObject() {
@@ -46,7 +46,7 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterStatus valueFieldStatus() {
-        return this.currentValue == null ? NOT_STARTED : this.currentValue.right();
+        return this.currentValue == null ? NOT_STARTED : this.currentValue.status();
     }
 
     public WriterState receiveDoubleQuote() {
@@ -54,11 +54,11 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState writeCharacterToIdentifier(String character) {
-        return new WriterState(this.mainObject, this.tokenStack, FieldState.forStringField(this.identifier.currentValue().concat(character), this.identifier.status()), this.currentValue, this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, FieldState.identifier(this.identifier.value().concat(character), this.identifier.status()), this.currentValue, this.writingTextField);
     }
 
     public WriterState writeCharacterToValueField(String character) {
-        return updateValueField(concatValueField(currentValue.left(), character));
+        return updateValueField(concatValueField(currentValue.value(), character));
     }
 
     static String concatValueField(Object currentValue, String character) {
@@ -78,15 +78,15 @@ public record WriterState(JsonObject mainObject,
     }
 
     private WriterState updateValueField(Object newObjectToBeAdded, FieldType fieldType) {
-        return new WriterState(this.mainObject, this.tokenStack, fieldType, this.identifier, new Pair<>(newObjectToBeAdded, WRITING), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, fieldType, this.identifier, new FieldState<>(newObjectToBeAdded, this.currentValue.fieldType(), WRITING), this.writingTextField);
     }
 
     public WriterState moveIdentifierToWritingState() {
-        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, FieldState.forStringField(this.identifier.currentValue(), WRITING), this.currentValue(), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, FieldState.identifier(this.identifier.value(), WRITING), this.currentValue(), this.writingTextField);
     }
 
     public WriterState moveIdentifierToFinishState() {
-        return new WriterState(this.mainObject, this.tokenStack, FieldState.forStringField(this.identifier.currentValue(), FINISHED), this.currentValue(), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, FieldState.identifier(this.identifier.value(), FINISHED), this.currentValue(), this.writingTextField);
     }
 
     public WriterState moveValueFieldToFinishState() {
@@ -94,17 +94,17 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState moveValueFieldToWritingState(FieldType fieldType) {
-        return new WriterState(this.mainObject, this.tokenStack, fieldType, this.identifier, new Pair<>("", WRITING), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, fieldType, this.identifier, new FieldState<>("", fieldType, WRITING), this.writingTextField);
     }
 
     public WriterState moveValueFieldToNotStartedState() {
-        return new WriterState(this.mainObject, this.tokenStack, UNKNOWN, this.identifier, new Pair<>(new Object(), NOT_STARTED), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, UNKNOWN, this.identifier, new FieldState<>(new Object(), UNKNOWN, NOT_STARTED), this.writingTextField);
     }
 
     private WriterState flushNode() {
         var jsonNodes = mainObject.jsonNodes();
 
-        var node = createJsonNodeOfCorrectType(new JsonNode(identifier.currentValue(), currentValue.left()));
+        var node = createJsonNodeOfCorrectType(new JsonNode(identifier.value(), currentValue.value()));
 
         if (jsonNodes == null) {
             jsonNodes = new JsonNode[]{node};
@@ -114,7 +114,7 @@ public record WriterState(JsonObject mainObject,
             jsonNodes = list.toArray(JsonNode[]::new);
         }
 
-        return new WriterState(new JsonObject(jsonNodes), this.tokenStack, FieldState.forStringField("", WriterStatus.NOT_STARTED), new Pair<>("", WriterStatus.NOT_STARTED), false);
+        return new WriterState(new JsonObject(jsonNodes), this.tokenStack, FieldState.identifier("", WriterStatus.NOT_STARTED), new FieldState<>(new Object(), UNKNOWN, WriterStatus.NOT_STARTED), false);
     }
 
     private JsonNode createJsonNodeOfCorrectType(JsonNode jsonNode) {
