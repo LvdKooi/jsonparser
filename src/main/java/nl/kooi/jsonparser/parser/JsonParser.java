@@ -69,11 +69,13 @@ public class JsonParser {
     }
 
     private static WriterState handleComma(WriterState state) {
-        if (hasStatusNotIn(state::valueFieldStatus, NOT_STARTED) && state.currentFieldType() != ARRAY) {
-            return state.moveValueFieldToFinishState();
-        }
 
-        if (state.currentFieldType() == ARRAY && state.currentValue().fieldType() != STRING) {
+        if (hasStatusNotIn(state::valueFieldStatus, NOT_STARTED)) {
+
+            if (state.currentFieldType() != ARRAY) {
+                return state.moveValueFieldToFinishState();
+            }
+
             return state.addValueToArray();
         }
 

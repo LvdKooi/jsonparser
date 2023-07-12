@@ -100,7 +100,7 @@ public record WriterState(JsonObject mainObject,
 
         var arrayState = new ArrayState(newArray);
 
-        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>(new Object(), this.currentValue.fieldType(), WriterStatus.NOT_STARTED), arrayState, this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>(new Object(), UNKNOWN, WriterStatus.NOT_STARTED), arrayState, this.writingTextField);
     }
 
     private Object formatType(FieldState<?> fieldState) {
