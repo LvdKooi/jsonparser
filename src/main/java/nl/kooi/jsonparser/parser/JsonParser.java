@@ -85,36 +85,46 @@ public class JsonParser {
     private static WriterState handleToken(Token token,
                                            WriterState state,
                                            UnaryOperator<WriterState> writerStateFunction) {
-        var updatedState = state.getLastToken()
+        return state.getLastToken()
                 .filter(tok -> token == tok)
                 .filter(tok -> tok == TEXT)
-                .isPresent() ? state : state.addToken(token);
-
-        return writerStateFunction.apply(updatedState);
+                .map(tokenRemainsText -> writerStateFunction.apply(state))
+                .orElseGet(() -> writerStateFunction.apply(state.addToken(token)));
     }
 
     private static WriterState handleDoubleQuote(WriterState state) {
-
         var updatedState = state.receiveDoubleQuote();
 
-        if (hasStatus(updatedState::identifierStatus, NOT_STARTED)) {
-            return updatedState.moveIdentifierToWritingState();
-        } else if (hasStatus(updatedState::identifierStatus, WRITING)) {
-            return updatedState.moveIdentifierToFinishState();
-        }
+        return handleIdentifier(updatedState)
+                .orElseGet(() -> handleValueField(updatedState)
+                        .orElseGet(() -> handleArrayValue(updatedState)
+                                .orElse(updatedState)));
+    }
 
+    private static Optional<WriterState> handleArrayValue(WriterState updatedState) {
+        if (updatedState.currentFieldType() == ARRAY) {
+            return Optional.of(updatedState.addValueToArray());
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<WriterState> handleValueField(WriterState updatedState) {
         if (hasStatus(updatedState::identifierStatus, FINISHED) &&
                 hasStatusNotIn(updatedState::valueFieldStatus, WRITING, FINISHED)) {
-            return updatedState.moveValueFieldToWritingState(STRING);
-        } else if (hasStatus(updatedState::valueFieldStatus, WRITING) && state.currentFieldType() != ARRAY) {
-            return updatedState.moveValueFieldToFinishState();
+            return Optional.of(updatedState.moveValueFieldToWritingState(STRING));
+        } else if (hasStatus(updatedState::valueFieldStatus, WRITING) && updatedState.currentFieldType() != ARRAY) {
+            return Optional.of(updatedState.moveValueFieldToFinishState());
         }
+        return Optional.empty();
+    }
 
-        if (state.currentFieldType() == ARRAY) {
-            return updatedState.addValueToArray();
+    private static Optional<WriterState> handleIdentifier(WriterState updatedState) {
+        if (hasStatus(updatedState::identifierStatus, NOT_STARTED)) {
+            return Optional.of(updatedState.moveIdentifierToWritingState());
+        } else if (hasStatus(updatedState::identifierStatus, WRITING)) {
+            return Optional.of(updatedState.moveIdentifierToFinishState());
         }
-
-        return updatedState;
+        return Optional.empty();
     }
 
     private static WriterState handleOpenBrace(WriterState state) {
