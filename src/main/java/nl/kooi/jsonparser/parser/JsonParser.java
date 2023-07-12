@@ -47,7 +47,7 @@ public class JsonParser {
             case TEXT, BOOLEAN, NUMBER -> writerState -> writeCharacterToState(writerState, character);
             case SQ_BRACKET_OPEN -> JsonParser::handleOpenSquareBracket;
             case SQ_BRACKET_CLOSED -> JsonParser::handleClosedSquareBracket;
-            default -> currentState -> currentState;
+            default -> UnaryOperator.identity();
         };
 
         return handleToken(token, state, handler);
@@ -161,16 +161,16 @@ public class JsonParser {
                 .filter(token -> character.equals(token.getMatchingString()))
                 .findFirst();
 
-
         if (state.getLastToken().filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN)).isPresent() &&
-                tokenOptional
-                        .filter(Token::isJsonFormatToken)
-                        .isEmpty()) {
-
-            return isNumber(character) || isDecimalPoint(character) || isMinus(character) ? Optional.of(NUMBER) : Optional.of(BOOLEAN);
+                tokenOptional.filter(Token::isJsonFormatToken).isEmpty()) {
+            return isNumberRelatedCharacter(character) ? Optional.of(NUMBER) : Optional.of(BOOLEAN);
         }
 
         return tokenOptional;
+    }
+
+    private static boolean isNumberRelatedCharacter(String character) {
+        return isNumber(character) || isDecimalPoint(character) || isMinus(character);
     }
 
     private static boolean hasStatus(Supplier<WriterStatus> statusSupplier, WriterStatus match) {
@@ -187,11 +187,9 @@ public class JsonParser {
 
     private static boolean isNumber(String character) {
         return CompletableFuture.supplyAsync(() -> {
-                    Integer.valueOf(character);
-                    return true;
-                })
-                .exceptionally(exc -> false)
-                .join();
+            Integer.valueOf(character);
+            return true;
+        }).exceptionally(exc -> false).join();
     }
 
     private static boolean isDecimalPoint(String character) {
