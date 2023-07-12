@@ -25,30 +25,28 @@ public class JsonParser {
         var finalState = new WriterState();
 
         for (var character : objectString.split("")) {
-
-            var currentState = finalState;
-            finalState = maybeToken(character, currentState)
-                    .map(token -> handleToken(token, character, currentState))
-                    .orElse(currentState);
+            finalState = createTokenInstruction(character, finalState)
+                    .map(JsonParser::handleToken)
+                    .orElse(finalState);
         }
 
         return finalState.mainObject();
     }
 
-    private static WriterState handleToken(Token token, String character, WriterState state) {
-        UnaryOperator<WriterState> handler = switch (token) {
+    private static WriterState handleToken(TokenInstruction tokenInstruction) {
+        UnaryOperator<WriterState> handler = switch (tokenInstruction.token()) {
             case BRACE_OPEN -> JsonParser::handleOpenBrace;
             case D_QUOTE -> JsonParser::handleDoubleQuote;
             case BRACE_CLOSED -> JsonParser::handleClosingBrace;
             case SEMI_COLON -> JsonParser::handleSemiColon;
             case COMMA -> JsonParser::handleComma;
-            case TEXT, BOOLEAN, NUMBER -> writerState -> writeCharacterToState(writerState, character);
+            case TEXT, BOOLEAN, NUMBER -> writerState -> writeCharacterToState(writerState, tokenInstruction.character());
             case SQ_BRACKET_OPEN -> JsonParser::handleOpenSquareBracket;
             case SQ_BRACKET_CLOSED -> JsonParser::handleClosedSquareBracket;
             default -> UnaryOperator.identity();
         };
 
-        return handleToken(token, state, handler);
+        return handleToken(tokenInstruction.token(), tokenInstruction.state(), handler);
     }
 
     private static WriterState handleToken(Token token, WriterState state, UnaryOperator<WriterState> writerStateFunction) {
@@ -142,20 +140,23 @@ public class JsonParser {
                 state.moveValueFieldToFinishState() : state;
     }
 
-    private static Optional<Token> maybeToken(String character, WriterState state) {
+    private static Optional<TokenInstruction> createTokenInstruction(String character, WriterState state) {
         if (state.writingTextField() && !isDoubleQuote(character)) {
-            return Optional.of(TEXT);
+            return Optional.of(new TokenInstruction(TEXT, character, state));
         }
 
         if (!state.writingTextField() && isSpace(character)) {
-            return Optional.of(SPACE);
+            return Optional.of(new TokenInstruction(SPACE, character, state));
         }
 
         if (isProcessingNonTextValue(state, character)) {
-            return isNumberRelatedCharacter(character) ? Optional.of(NUMBER) : Optional.of(BOOLEAN);
+            return isNumberRelatedCharacter(character) ?
+                    Optional.of(new TokenInstruction(NUMBER, character, state)) :
+                    Optional.of(new TokenInstruction(BOOLEAN, character, state));
         }
 
-        return findToken(character);
+        return findToken(character)
+                .map(token -> new TokenInstruction(token, character, state));
     }
 
     private static boolean isProcessingNonTextValue(WriterState state, String character) {
