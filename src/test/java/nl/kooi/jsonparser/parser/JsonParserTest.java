@@ -85,12 +85,12 @@ class JsonParserTest {
 
     @Test
     void anArrayFieldWithAMixedArray() {
-        var result = JsonParser.parse("{\"children\": [1, true, \"hello\", 2, false, \"world\" ]}");
+        var result = JsonParser.parse("{\"children\": [1, true, \"hello\", -2, -3.86, false, \"world\" ]}");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(1, true, "hello", 2, false, "world"));
+        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(1, true, "hello", -2, -3.86, false, "world"));
     }
 
 

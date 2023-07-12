@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -52,16 +53,22 @@ public class JsonParser {
         return handleToken(token, state, handler);
     }
 
+    private static WriterState handleToken(Token token,
+                                           WriterState state,
+                                           UnaryOperator<WriterState> writerStateFunction) {
+        return state.getLastToken()
+                .filter(tok -> token == tok)
+                .filter(tok -> tok == TEXT)
+                .map(tokenRemainsText -> writerStateFunction.apply(state))
+                .orElseGet(() -> writerStateFunction.apply(state.addToken(token)));
+    }
+
     private static WriterState writeCharacterToState(WriterState state, String character) {
-        if (hasStatus(state::identifierStatus, WRITING)) {
-            return state.writeCharacterToIdentifier(character);
-        }
-
-        if (hasStatus(state::identifierStatus, FINISHED)) {
-            return state.writeCharacterToValueField(character);
-        }
-
-        return state;
+        return switch (state.identifierStatus()) {
+            case WRITING -> state.writeCharacterToIdentifier(character);
+            case FINISHED -> state.writeCharacterToValueField(character);
+            default -> state;
+        };
     }
 
     private static WriterState handleSemiColon(WriterState state) {
@@ -82,33 +89,22 @@ public class JsonParser {
         return state;
     }
 
-    private static WriterState handleToken(Token token,
-                                           WriterState state,
-                                           UnaryOperator<WriterState> writerStateFunction) {
-        return state.getLastToken()
-                .filter(tok -> token == tok)
-                .filter(tok -> tok == TEXT)
-                .map(tokenRemainsText -> writerStateFunction.apply(state))
-                .orElseGet(() -> writerStateFunction.apply(state.addToken(token)));
-    }
-
     private static WriterState handleDoubleQuote(WriterState state) {
         var updatedState = state.receiveDoubleQuote();
 
-        return handleIdentifier(updatedState)
-                .orElseGet(() -> handleValueField(updatedState)
-                        .orElseGet(() -> handleArrayValue(updatedState)
+        return updateStateWithDoubleQuoteForIdentifier(updatedState)
+                .orElseGet(() -> updateStateWithDoubleQuoteForValueField(updatedState)
+                        .orElseGet(() -> updateStateWithDoubleQuoteForArrayValue(updatedState)
                                 .orElse(updatedState)));
     }
 
-    private static Optional<WriterState> handleArrayValue(WriterState updatedState) {
-        if (updatedState.currentFieldType() == ARRAY) {
-            return Optional.of(updatedState.addValueToArray());
-        }
-        return Optional.empty();
+    private static Optional<WriterState> updateStateWithDoubleQuoteForArrayValue(WriterState updatedState) {
+        return Optional.ofNullable(updatedState)
+                .filter(state -> ARRAY == state.currentFieldType())
+                .map(WriterState::addValueToArray);
     }
 
-    private static Optional<WriterState> handleValueField(WriterState updatedState) {
+    private static Optional<WriterState> updateStateWithDoubleQuoteForValueField(WriterState updatedState) {
         if (hasStatus(updatedState::identifierStatus, FINISHED) &&
                 hasStatusNotIn(updatedState::valueFieldStatus, WRITING, FINISHED)) {
             return Optional.of(updatedState.moveValueFieldToWritingState(STRING));
@@ -118,7 +114,7 @@ public class JsonParser {
         return Optional.empty();
     }
 
-    private static Optional<WriterState> handleIdentifier(WriterState updatedState) {
+    private static Optional<WriterState> updateStateWithDoubleQuoteForIdentifier(WriterState updatedState) {
         if (hasStatus(updatedState::identifierStatus, NOT_STARTED)) {
             return Optional.of(updatedState.moveIdentifierToWritingState());
         } else if (hasStatus(updatedState::identifierStatus, WRITING)) {
@@ -171,7 +167,7 @@ public class JsonParser {
                         .filter(Token::isJsonFormatToken)
                         .isEmpty()) {
 
-            return isNumber(character) || isDecimalPoint(character) ? Optional.of(NUMBER) : Optional.of(BOOLEAN);
+            return isNumber(character) || isDecimalPoint(character) || isMinus(character) ? Optional.of(NUMBER) : Optional.of(BOOLEAN);
         }
 
         return tokenOptional;
@@ -190,15 +186,19 @@ public class JsonParser {
     }
 
     private static boolean isNumber(String character) {
-        try {
-            Integer.valueOf(character);
-            return true;
-        } catch (NumberFormatException exc) {
-            return false;
-        }
+        return CompletableFuture.supplyAsync(() -> {
+                    Integer.valueOf(character);
+                    return true;
+                })
+                .exceptionally(exc -> false)
+                .join();
     }
 
     private static boolean isDecimalPoint(String character) {
         return ".".equals(character);
+    }
+
+    private static boolean isMinus(String character) {
+        return "-".equals(character);
     }
 }
