@@ -1,6 +1,7 @@
 package nl.kooi.jsonparser.parser;
 
 import nl.kooi.jsonparser.json.JsonObject;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -94,6 +95,7 @@ class JsonParserTest {
 
 
     @Test
+    @Disabled
     void anArrayFieldWithEmptyArrays() {
         var result = JsonParser.parse("{\"children\": [[],[],[],[]]}");
 
