@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -53,9 +52,7 @@ public class JsonParser {
         return handleToken(token, state, handler);
     }
 
-    private static WriterState handleToken(Token token,
-                                           WriterState state,
-                                           UnaryOperator<WriterState> writerStateFunction) {
+    private static WriterState handleToken(Token token, WriterState state, UnaryOperator<WriterState> writerStateFunction) {
         return state.getLastToken()
                 .filter(tok -> token == tok)
                 .filter(tok -> tok == TEXT)
@@ -76,7 +73,6 @@ public class JsonParser {
     }
 
     private static WriterState handleComma(WriterState state) {
-
         if (hasStatusNotIn(state::valueFieldStatus, NOT_STARTED)) {
 
             if (state.currentFieldType() != ARRAY) {
@@ -148,25 +144,39 @@ public class JsonParser {
     }
 
     private static Optional<Token> maybeToken(String character, WriterState state) {
-        if (state.writingTextField() && !D_QUOTE.getMatchingString().equals(character)) {
+        if (state.writingTextField() && !isDoubleQuote(character)) {
             return Optional.of(TEXT);
         }
 
-        if (!state.writingTextField() && SPACE.getMatchingString().equals(character)) {
+        if (!state.writingTextField() && isSpace(character)) {
             return Optional.of(SPACE);
         }
 
-        var tokenOptional = Arrays.stream(Token.values())
-                .filter(Objects::nonNull)
-                .filter(token -> character.equals(token.getMatchingString()))
-                .findFirst();
-
-        if (state.getLastToken().filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN)).isPresent() &&
-                tokenOptional.filter(Token::isJsonFormatToken).isEmpty()) {
+        if (isProcessingNonTextValue(state, character)) {
             return isNumberRelatedCharacter(character) ? Optional.of(NUMBER) : Optional.of(BOOLEAN);
         }
 
-        return tokenOptional;
+        return findToken(character);
+    }
+
+    private static boolean isProcessingNonTextValue(WriterState state, String character) {
+        return state.getLastToken().filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN)).isPresent()
+                && findToken(character).filter(Token::isJsonFormatToken).isEmpty();
+    }
+
+    private static Optional<Token> findToken(String character) {
+        return Arrays.stream(Token.values())
+                .filter(Objects::nonNull)
+                .filter(token -> character.equals(token.getMatchingString()))
+                .findFirst();
+    }
+
+    private static boolean isDoubleQuote(String character) {
+        return D_QUOTE.getMatchingString().equals(character);
+    }
+
+    private static boolean isSpace(String character) {
+        return SPACE.getMatchingString().equals(character);
     }
 
     private static boolean isNumberRelatedCharacter(String character) {
@@ -186,10 +196,12 @@ public class JsonParser {
     }
 
     private static boolean isNumber(String character) {
-        return CompletableFuture.supplyAsync(() -> {
+        try {
             Integer.valueOf(character);
             return true;
-        }).exceptionally(exc -> false).join();
+        } catch (NumberFormatException exc) {
+            return false;
+        }
     }
 
     private static boolean isDecimalPoint(String character) {

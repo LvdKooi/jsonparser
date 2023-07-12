@@ -59,7 +59,6 @@ class JsonParserTest {
         assertThat(result.jsonNodes()[0].content()).isEqualTo(false);
     }
 
-
     @Test
     void twoStringFields() {
         var result = JsonParser.parse("{\"name\": \"Laurens\",\"sign\": \"Taurus\"}");
@@ -71,7 +70,6 @@ class JsonParserTest {
         assertThat(result.jsonNodes()[1].identifier()).isEqualTo("sign");
         assertThat(result.jsonNodes()[1].content()).isEqualTo("Taurus");
     }
-
 
     @Test
     void anArrayFieldWithEmptyArray() {
