@@ -14,6 +14,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import static nl.kooi.jsonparser.json.FieldType.ARRAY;
 import static nl.kooi.jsonparser.json.FieldType.STRING;
 import static nl.kooi.jsonparser.json.Token.*;
 import static nl.kooi.jsonparser.json.WriterStatus.*;
@@ -68,8 +69,14 @@ public class JsonParser {
     }
 
     private static WriterState handleComma(WriterState state) {
+
         if (hasStatusNotIn(state::valueFieldStatus, NOT_STARTED)) {
-            return state.moveValueFieldToFinishState();
+
+            if (state.currentFieldType() != ARRAY) {
+                return state.moveValueFieldToFinishState();
+            }
+
+            return state.addValueToArray();
         }
 
         return state;
@@ -99,8 +106,12 @@ public class JsonParser {
         if (hasStatus(updatedState::identifierStatus, FINISHED) &&
                 hasStatusNotIn(updatedState::valueFieldStatus, WRITING, FINISHED)) {
             return updatedState.moveValueFieldToWritingState(STRING);
-        } else if (hasStatus(updatedState::valueFieldStatus, WRITING)) {
+        } else if (hasStatus(updatedState::valueFieldStatus, WRITING) && state.currentFieldType() != ARRAY) {
             return updatedState.moveValueFieldToFinishState();
+        }
+
+        if (state.currentFieldType() == ARRAY) {
+            return updatedState.addValueToArray();
         }
 
         return updatedState;
@@ -120,7 +131,9 @@ public class JsonParser {
     }
 
     private static WriterState handleClosedSquareBracket(WriterState state) {
-        return finishValueField(state);
+        return hasStatus(state.currentValue()::status, WRITING) ?
+                state.addValueToArray().moveValueFieldToFinishState() :
+                state.moveValueFieldToFinishState();
     }
 
     private static WriterState finishValueField(WriterState state) {
@@ -143,7 +156,7 @@ public class JsonParser {
                 .findFirst();
 
 
-        if (state.getLastToken().filter(isIn(SEMI_COLON, SPACE, NUMBER, BOOLEAN)).isPresent() &&
+        if (state.getLastToken().filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN)).isPresent() &&
                 tokenOptional
                         .filter(Token::isJsonFormatToken)
                         .isEmpty()) {

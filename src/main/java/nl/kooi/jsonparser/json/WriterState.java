@@ -1,9 +1,6 @@
 package nl.kooi.jsonparser.json;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Stack;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static nl.kooi.jsonparser.json.FieldType.*;
@@ -14,14 +11,15 @@ public record WriterState(JsonObject mainObject,
                           FieldType currentFieldType,
                           FieldState<String> identifier,
                           FieldState<?> currentValue,
+                          List<Object> currentArray,
                           boolean writingTextField) {
 
     public WriterState() {
-        this(null, new Stack<>(), FieldType.UNKNOWN, FieldState.identifier("", WriterStatus.NOT_STARTED), new FieldState<>(new Object(), UNKNOWN, WriterStatus.NOT_STARTED), false);
+        this(null, new Stack<>(), FieldType.UNKNOWN, FieldState.identifier("", WriterStatus.NOT_STARTED), new FieldState<>(new Object(), UNKNOWN, WriterStatus.NOT_STARTED), null, false);
     }
 
     public WriterState(JsonObject mainObject, Stack<Token> tokenStack, FieldState<String> identifier, FieldState<?> currentValue, boolean receivedDoubleQuote) {
-        this(mainObject, tokenStack, FieldType.UNKNOWN, identifier, currentValue, receivedDoubleQuote);
+        this(mainObject, tokenStack, FieldType.UNKNOWN, identifier, currentValue, null, receivedDoubleQuote);
     }
 
     public WriterState addInitialMainObject() {
@@ -32,7 +30,7 @@ public record WriterState(JsonObject mainObject,
         var newStack = this.tokenStack.stream().collect(Collectors.toCollection(Stack::new));
         newStack.add(token);
 
-        return new WriterState(this.mainObject, newStack, this.currentFieldType, this.identifier, this.currentValue, this.writingTextField);
+        return new WriterState(this.mainObject, newStack, this.currentFieldType, this.identifier, this.currentValue, this.currentArray, this.writingTextField);
     }
 
     public Optional<Token> getLastToken() {
@@ -50,7 +48,7 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState receiveDoubleQuote() {
-        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, this.currentValue, !this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, this.currentValue, this.currentArray, !this.writingTextField);
     }
 
     public WriterState writeCharacterToIdentifier(String character) {
@@ -70,19 +68,19 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState createArrayContentField() {
-        return updateValueField(new ArrayList<>(), ARRAY);
+        return new WriterState(this.mainObject, this.tokenStack, ARRAY, this.identifier, this.currentValue, new ArrayList<>(), this.writingTextField);
     }
 
     private WriterState updateValueField(Object newObjectToBeAdded) {
-        return updateValueField(newObjectToBeAdded, this.currentFieldType);
+        return updateValueField(newObjectToBeAdded, this.currentValue.fieldType());
     }
 
     private WriterState updateValueField(Object newObjectToBeAdded, FieldType fieldType) {
-        return new WriterState(this.mainObject, this.tokenStack, fieldType, this.identifier, new FieldState<>(newObjectToBeAdded, this.currentValue.fieldType(), WRITING), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType != ARRAY ? fieldType : ARRAY, this.identifier, new FieldState<>(newObjectToBeAdded, this.currentValue.fieldType(), WRITING), this.currentArray, this.writingTextField);
     }
 
     public WriterState moveIdentifierToWritingState() {
-        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, FieldState.identifier(this.identifier.value(), WRITING), this.currentValue(), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, FieldState.identifier(this.identifier.value(), WRITING), this.currentValue(), this.currentArray, this.writingTextField);
     }
 
     public WriterState moveIdentifierToFinishState() {
@@ -93,18 +91,38 @@ public record WriterState(JsonObject mainObject,
         return flushNode();
     }
 
+    public WriterState addValueToArray() {
+        var newArray = new ArrayList<>(this.currentArray);
+        newArray.add(formatType(this.currentValue));
+
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>(new Object(), UNKNOWN, WriterStatus.NOT_STARTED), newArray, this.writingTextField);
+    }
+
+    private Object formatType(FieldState<?> fieldState) {
+        if (fieldState.fieldType() == STRING) {
+            return fieldState.value();
+        }
+
+        if (isNumber(fieldState.value().toString())) {
+            return handleNumberType(fieldState.value().toString());
+        } else {
+            return Boolean.valueOf(fieldState.value().toString());
+        }
+    }
+
     public WriterState moveValueFieldToWritingState(FieldType fieldType) {
-        return new WriterState(this.mainObject, this.tokenStack, fieldType, this.identifier, new FieldState<>("", fieldType, WRITING), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>("", fieldType, WRITING), this.currentArray, this.writingTextField);
     }
 
     public WriterState moveValueFieldToNotStartedState() {
-        return new WriterState(this.mainObject, this.tokenStack, UNKNOWN, this.identifier, new FieldState<>(new Object(), UNKNOWN, NOT_STARTED), this.writingTextField);
+        return new WriterState(this.mainObject, this.tokenStack, UNKNOWN, this.identifier, new FieldState<>(new Object(), UNKNOWN, NOT_STARTED), this.currentArray, this.writingTextField);
     }
 
     private WriterState flushNode() {
         var jsonNodes = mainObject.jsonNodes();
+        var valueToBeFlushed = currentFieldType == ARRAY ? currentArray : currentValue.value();
 
-        var node = createJsonNodeOfCorrectType(new JsonNode(identifier.value(), currentValue.value()));
+        var node = createJsonNodeOfCorrectType(new JsonNode(identifier.value(), valueToBeFlushed));
 
         if (jsonNodes == null) {
             jsonNodes = new JsonNode[]{node};
@@ -163,6 +181,18 @@ public record WriterState(JsonObject mainObject,
         return false;
     }
 
+    private Number handleNumberType(String numberString) {
+        if (numberString == null) {
+            return null;
+        }
+
+        try {
+            return Integer.valueOf(numberString);
+        } catch (NumberFormatException exc) {
+            return Double.valueOf(numberString);
+        }
+    }
+
     private boolean isBoolean(JsonNode jsonNode) {
         if (currentFieldType != STRING) {
             var value = ((String) jsonNode.content()).trim();
@@ -172,4 +202,13 @@ public record WriterState(JsonObject mainObject,
         return false;
     }
 
+
+    private boolean isNumber(String numberString) {
+        try {
+            Double.valueOf(numberString.trim());
+            return true;
+        } catch (NumberFormatException exc) {
+            return false;
+        }
+    }
 }
