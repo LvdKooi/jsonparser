@@ -21,7 +21,10 @@ class JsonParserTest {
 
     @Test
     void oneStringField() {
-        var result = JsonParser.parse("{\"name\": \"Laurens\"}");
+        var result = JsonParser.parse("""
+                {
+                  "name": "Laurens"
+                }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -31,7 +34,10 @@ class JsonParserTest {
 
     @Test
     void oneStringFieldWithTokenCharacters() {
-        var result = JsonParser.parse("{\"name\": \"{[,true false:]}\"}");
+        var result = JsonParser.parse("""
+                {
+                   "name": "{[,true false:]}"
+                }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -41,7 +47,10 @@ class JsonParserTest {
 
     @Test
     void oneNumberField() {
-        var result = JsonParser.parse("{\"weight\": 79.85}");
+        var result = JsonParser.parse("""
+                {
+                  "weight": 79.85
+                }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -51,7 +60,10 @@ class JsonParserTest {
 
     @Test
     void oneBooleanField() {
-        var result = JsonParser.parse("{\"married\": false}");
+        var result = JsonParser.parse("""
+                {
+                  "married": false
+                }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -61,7 +73,11 @@ class JsonParserTest {
 
     @Test
     void twoStringFields() {
-        var result = JsonParser.parse("{\"name\": \"Laurens\",\"sign\": \"Taurus\"}");
+        var result = JsonParser.parse("""
+                {
+                  "name": "Laurens",
+                  "sign": "Taurus"
+                }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(2);
@@ -73,7 +89,10 @@ class JsonParserTest {
 
     @Test
     void anArrayFieldWithEmptyArray() {
-        var result = JsonParser.parse("{\"children\": []}");
+        var result = JsonParser.parse("""
+                {
+                  "children": []
+                }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -83,7 +102,10 @@ class JsonParserTest {
 
     @Test
     void anArrayFieldWithAMixedArray() {
-        var result = JsonParser.parse("{\"children\": [1, true, \"hello\", -2, -3.86, false, \"world\" ]}");
+        var result = JsonParser.parse("""
+                {
+                  "children": [1, true, "hello", -2, -3.86, false, "world"]
+                }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -95,7 +117,10 @@ class JsonParserTest {
     @Test
     @Disabled
     void anArrayFieldWithEmptyArrays() {
-        var result = JsonParser.parse("{\"children\": [[],[],[],[]]}");
+        var result = JsonParser.parse("""
+                {
+                  "children": [[],[],[]]
+                }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -105,7 +130,10 @@ class JsonParserTest {
 
     @Test
     void aStringArrayField() {
-        var result = JsonParser.parse("{\"children\": [\"Anthony\", \"Marvin\"]}");
+        var result = JsonParser.parse("""
+                {
+                  "children": ["Anthony", "Marvin"]
+                }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -115,7 +143,11 @@ class JsonParserTest {
 
     @Test
     void aNumberArrayFieldOfIntegers() {
-        var result = JsonParser.parse("{\"ages\": [12, 9]}");
+        var result = JsonParser.parse("""
+                {
+                  "ages": [12, 9]
+                }""");
+
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -125,7 +157,10 @@ class JsonParserTest {
 
     @Test
     void aNumberArrayFieldOfDoubles() {
-        var result = JsonParser.parse("{\"weights\": [12.99, 9.87]}");
+        var result = JsonParser.parse("""
+                {
+                  "weights": [12.99, 9.87]
+                }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -135,7 +170,11 @@ class JsonParserTest {
 
     @Test
     void aBooleanArrayField() {
-        var result = JsonParser.parse("{\"bools\": [true, false, true]}");
+        var result = JsonParser.parse("""
+                {
+                  "bools": [true, false, true]
+                }""");
+
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
@@ -145,8 +184,13 @@ class JsonParserTest {
 
     @Test
     void fourFieldsOfDifferentTypes() {
-        var result = JsonParser.parse("{\"name\": \"Laurens\",\"age\": 36, \"children\": [\"Anthony\", \"Marvin\"], \"married\": true}");
-
+        var result = JsonParser.parse("""
+                {
+                  "name": "Laurens",
+                  "age": 36,
+                  "children": ["Anthony", "Marvin"],
+                  "married": true
+                }""");
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(4);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("name");
