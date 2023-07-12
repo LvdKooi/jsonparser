@@ -22,18 +22,17 @@ import static nl.kooi.jsonparser.json.WriterStatus.*;
 public class JsonParser {
 
     public static JsonObject parse(String objectString) {
-        var state = new WriterState();
+        var finalState = new WriterState();
 
         for (var character : objectString.split("")) {
 
-            var tokenOptional = maybeToken(character, state);
-
-            state = tokenOptional.isPresent() ?
-                    handleToken(tokenOptional.get(), character, state) :
-                    state;
+            var currentState = finalState;
+            finalState = maybeToken(character, currentState)
+                    .map(token -> handleToken(token, character, currentState))
+                    .orElse(currentState);
         }
 
-        return state.mainObject();
+        return finalState.mainObject();
     }
 
     private static WriterState handleToken(Token token, String character, WriterState state) {
