@@ -25,9 +25,7 @@ public class JsonParser {
         var finalState = new WriterState();
 
         for (var character : objectString.split("")) {
-            finalState = createTokenCommand(character, finalState)
-                    .map(JsonParser::handleToken)
-                    .orElse(finalState);
+            finalState = createTokenCommand(character, finalState).map(JsonParser::handleToken).orElse(finalState);
         }
 
         return finalState.mainObject();
@@ -50,11 +48,7 @@ public class JsonParser {
     }
 
     private static WriterState handleToken(Token token, WriterState state, UnaryOperator<WriterState> writerStateFunction) {
-        return state.getLastToken()
-                .filter(tok -> token == tok)
-                .filter(tok -> tok == TEXT)
-                .map(tokenRemainsText -> writerStateFunction.apply(state))
-                .orElseGet(() -> writerStateFunction.apply(state.addToken(token)));
+        return state.getLastToken().filter(tok -> token == tok).filter(tok -> tok == TEXT).map(tokenRemainsText -> writerStateFunction.apply(state)).orElseGet(() -> writerStateFunction.apply(state.addToken(token)));
     }
 
     private static WriterState writeCharacterToState(WriterState state, String character) {
@@ -85,40 +79,39 @@ public class JsonParser {
     private static WriterState handleDoubleQuote(WriterState state) {
         var updatedState = state.receiveDoubleQuote();
 
-        return updateStateWithDoubleQuoteForIdentifier(updatedState)
-                .orElseGet(() -> updateStateWithDoubleQuoteForValueField(updatedState)
-                        .orElseGet(() -> updateStateWithDoubleQuoteForArrayValue(updatedState)
-                                .orElse(updatedState)));
+        return updateStateWithDoubleQuoteForIdentifier(updatedState).orElseGet(() -> updateStateWithDoubleQuoteForValueField(updatedState).orElseGet(() -> updateStateWithDoubleQuoteForArrayValue(updatedState).orElse(updatedState)));
     }
 
     private static Optional<WriterState> updateStateWithDoubleQuoteForArrayValue(WriterState updatedState) {
-        return Optional.ofNullable(updatedState)
-                .filter(state -> ARRAY == state.currentFieldType())
-                .map(WriterState::addValueToArray);
+        return Optional.ofNullable(updatedState).filter(state -> ARRAY == state.currentFieldType()).map(WriterState::addValueToArray);
     }
 
     private static Optional<WriterState> updateStateWithDoubleQuoteForValueField(WriterState updatedState) {
-        if (hasStatus(updatedState::identifierStatus, FINISHED) &&
-                hasStatusNotIn(updatedState::valueFieldStatus, WRITING, FINISHED)) {
+        if (hasStatus(updatedState::identifierStatus, FINISHED) && hasStatusNotIn(updatedState::valueFieldStatus, WRITING, FINISHED)) {
             return Optional.of(updatedState.moveValueFieldToWritingState(STRING));
-        } else if (hasStatus(updatedState::valueFieldStatus, WRITING) && updatedState.currentFieldType() != ARRAY) {
+        }
+
+        if (hasStatus(updatedState::valueFieldStatus, WRITING) && updatedState.currentFieldType() != ARRAY) {
             return Optional.of(updatedState.moveValueFieldToFinishState());
         }
+
         return Optional.empty();
     }
 
     private static Optional<WriterState> updateStateWithDoubleQuoteForIdentifier(WriterState updatedState) {
         if (hasStatus(updatedState::identifierStatus, NOT_STARTED)) {
             return Optional.of(updatedState.moveIdentifierToWritingState());
-        } else if (hasStatus(updatedState::identifierStatus, WRITING)) {
+        }
+
+        if (hasStatus(updatedState::identifierStatus, WRITING)) {
             return Optional.of(updatedState.moveIdentifierToFinishState());
         }
+
         return Optional.empty();
     }
 
     private static WriterState handleOpenBrace(WriterState state) {
-        return hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED) ?
-                state.addInitialMainObject() : state;
+        return hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED) ? state.addInitialMainObject() : state;
     }
 
     private static WriterState handleClosingBrace(WriterState state) {
@@ -130,14 +123,11 @@ public class JsonParser {
     }
 
     private static WriterState handleClosedSquareBracket(WriterState state) {
-        return hasStatus(state.currentValue()::status, WRITING) ?
-                state.addValueToArray().moveValueFieldToFinishState() :
-                state.moveValueFieldToFinishState();
+        return hasStatus(state.currentValue()::status, WRITING) ? state.addValueToArray().moveValueFieldToFinishState() : state.moveValueFieldToFinishState();
     }
 
     private static WriterState finishValueField(WriterState state) {
-        return hasStatus(state::valueFieldStatus, WRITING) ?
-                state.moveValueFieldToFinishState() : state;
+        return hasStatus(state::valueFieldStatus, WRITING) ? state.moveValueFieldToFinishState() : state;
     }
 
     private static Optional<TokenCommand> createTokenCommand(String character, WriterState state) {
@@ -150,25 +140,18 @@ public class JsonParser {
         }
 
         if (isProcessingNonTextValue(state, character)) {
-            return isNumberRelatedCharacter(character) ?
-                    Optional.of(new TokenCommand(NUMBER, character, state)) :
-                    Optional.of(new TokenCommand(BOOLEAN, character, state));
+            return isNumberRelatedCharacter(character) ? Optional.of(new TokenCommand(NUMBER, character, state)) : Optional.of(new TokenCommand(BOOLEAN, character, state));
         }
 
-        return findToken(character)
-                .map(token -> new TokenCommand(token, character, state));
+        return findToken(character).map(token -> new TokenCommand(token, character, state));
     }
 
     private static boolean isProcessingNonTextValue(WriterState state, String character) {
-        return state.getLastToken().filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN)).isPresent()
-                && findToken(character).filter(Token::isJsonFormatToken).isEmpty();
+        return state.getLastToken().filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN)).isPresent() && findToken(character).filter(Token::isJsonFormatToken).isEmpty();
     }
 
     private static Optional<Token> findToken(String character) {
-        return Arrays.stream(Token.values())
-                .filter(Objects::nonNull)
-                .filter(token -> character.equals(token.getMatchingString()))
-                .findFirst();
+        return Arrays.stream(Token.values()).filter(Objects::nonNull).filter(token -> character.equals(token.getMatchingString())).findFirst();
     }
 
     private static boolean isDoubleQuote(String character) {
