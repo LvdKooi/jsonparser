@@ -224,4 +224,37 @@ class JsonParserTest {
         assertThat(nestedObject.jsonNodes()[1].identifier()).isEqualTo("age");
         assertThat(nestedObject.jsonNodes()[1].content()).isEqualTo(36);
     }
+
+    @Test
+    void simpleJsonWith2NestedObject() {
+        var result = JsonParser.parse("""
+                {
+                  "person1": {
+                    "name": "Laurens",
+                    "age": 36
+                  },
+                  "person2": {
+                    "name": "Andreas",
+                    "age": 32
+                  }
+                }""");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(2);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("person1");
+        assertThat(result.jsonNodes()[0].content()).isInstanceOf(JsonObject.class);
+        assertThat(result.jsonNodes()[1].identifier()).isEqualTo("person2");
+        assertThat(result.jsonNodes()[1].content()).isInstanceOf(JsonObject.class);
+
+        var nestedObject1 = (JsonObject) result.jsonNodes()[0].content();
+        assertThat(nestedObject1.jsonNodes()[0].identifier()).isEqualTo("name");
+        assertThat(nestedObject1.jsonNodes()[0].content()).isEqualTo("Laurens");
+        assertThat(nestedObject1.jsonNodes()[1].identifier()).isEqualTo("age");
+        assertThat(nestedObject1.jsonNodes()[1].content()).isEqualTo(36);
+        var nestedObject2 = (JsonObject) result.jsonNodes()[1].content();
+        assertThat(nestedObject2.jsonNodes()[0].identifier()).isEqualTo("name");
+        assertThat(nestedObject2.jsonNodes()[0].content()).isEqualTo("Andreas");
+        assertThat(nestedObject2.jsonNodes()[1].identifier()).isEqualTo("age");
+        assertThat(nestedObject2.jsonNodes()[1].content()).isEqualTo(32);
+    }
 }

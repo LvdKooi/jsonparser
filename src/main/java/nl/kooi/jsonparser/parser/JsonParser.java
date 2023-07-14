@@ -131,20 +131,25 @@ public class JsonParser {
 
     private static String getNestedObjectString(String leftOverString) {
         var stringArray = leftOverString.split("");
-        var openBraceCount = Arrays.stream(stringArray).filter("{"::equals).count();
+        var openBraceCounter = 0;
         var currentString = "";
         var closedBraceCounter = 0;
 
         for (var character : stringArray) {
-            if (closedBraceCounter == openBraceCount) {
-                break;
-            }
+
 
             if (character.equals("}")) {
                 closedBraceCounter++;
             }
 
+            if (character.equals("{")) {
+                openBraceCounter++;
+            }
+
             currentString = currentString.concat(character);
+            if (closedBraceCounter == openBraceCounter) {
+                break;
+            }
         }
 
         return currentString;
