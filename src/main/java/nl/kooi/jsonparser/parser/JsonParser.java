@@ -129,24 +129,19 @@ public class JsonParser {
         return updatedState.writeObjectToValueField(JsonParser.parse(nestedObjectString));
     }
 
-    private static String getNestedObjectString(String leftOverString) {
-        var stringArray = leftOverString.split("");
+    private static String getNestedObjectString(String stillToBeProcessed) {
         var openBraceCounter = 0;
         var currentString = "";
         var closedBraceCounter = 0;
 
-        for (var character : stringArray) {
-
-
-            if (character.equals("}")) {
-                closedBraceCounter++;
-            }
-
-            if (character.equals("{")) {
-                openBraceCounter++;
-            }
-
+        for (var character : stillToBeProcessed.split("")) {
             currentString = currentString.concat(character);
+
+            switch (character) {
+                case "}" -> closedBraceCounter++;
+                case "{" -> openBraceCounter++;
+            }
+
             if (closedBraceCounter == openBraceCounter) {
                 break;
             }
