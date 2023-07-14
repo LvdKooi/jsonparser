@@ -24,8 +24,10 @@ public class JsonParser {
     public static JsonObject parse(String objectString) {
         var finalState = new WriterState();
 
-        for (var character : objectString.split("")) {
-            finalState = createTokenCommand(character, finalState).map(JsonParser::handleToken).orElse(finalState);
+        while (finalState.characterCounter() != objectString.length()) {
+            finalState = createTokenCommand(objectString.substring(finalState.characterCounter()), Character.valueOf(objectString.charAt(finalState.characterCounter())).toString(), finalState)
+                    .map(JsonParser::handleToken)
+                    .orElse(finalState).incrementCharacterCounter();
         }
 
         return finalState.mainObject();
@@ -33,7 +35,7 @@ public class JsonParser {
 
     private static WriterState handleToken(TokenCommand tokenCommand) {
         UnaryOperator<WriterState> handler = switch (tokenCommand.token()) {
-            case BRACE_OPEN -> JsonParser::handleOpenBrace;
+            case BRACE_OPEN -> writerState -> handleOpenBrace(writerState, tokenCommand.remainingString());
             case D_QUOTE -> JsonParser::handleDoubleQuote;
             case BRACE_CLOSED -> JsonParser::handleClosingBrace;
             case SEMI_COLON -> JsonParser::handleSemiColon;
@@ -110,8 +112,42 @@ public class JsonParser {
         return Optional.empty();
     }
 
-    private static WriterState handleOpenBrace(WriterState state) {
-        return hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED) ? state.addInitialMainObject() : state;
+    private static WriterState handleOpenBrace(WriterState state, String leftOverString) {
+        if (state.mainObject() == null) {
+
+            return hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED) ? state.addInitialMainObject() : state;
+
+        }
+
+        return handleNestedObject(state, leftOverString);
+    }
+
+    private static WriterState handleNestedObject(WriterState state, String leftOverString) {
+        var nestedObjectString = getNestedObjectString(leftOverString);
+
+        var updatedState = state.incrementCharacterCounterBy(nestedObjectString.length());
+        return updatedState.writeObjectToValueField(JsonParser.parse(nestedObjectString));
+    }
+
+    private static String getNestedObjectString(String stillToBeProcessed) {
+        var openBraceCounter = 0;
+        var currentString = "";
+        var closedBraceCounter = 0;
+
+        for (var character : stillToBeProcessed.split("")) {
+            currentString = currentString.concat(character);
+
+            switch (character) {
+                case "}" -> closedBraceCounter++;
+                case "{" -> openBraceCounter++;
+            }
+
+            if (closedBraceCounter == openBraceCounter) {
+                break;
+            }
+        }
+
+        return currentString;
     }
 
     private static WriterState handleClosingBrace(WriterState state) {
@@ -130,20 +166,20 @@ public class JsonParser {
         return hasStatus(state::valueFieldStatus, WRITING) ? state.moveValueFieldToFinishState() : state;
     }
 
-    private static Optional<TokenCommand> createTokenCommand(String character, WriterState state) {
+    private static Optional<TokenCommand> createTokenCommand(String subString, String character, WriterState state) {
         if (state.writingTextField() && !isDoubleQuote(character)) {
-            return Optional.of(new TokenCommand(TEXT, character, state));
+            return Optional.of(new TokenCommand(subString, TEXT, character, state));
         }
 
         if (!state.writingTextField() && isSpace(character)) {
-            return Optional.of(new TokenCommand(SPACE, character, state));
+            return Optional.of(new TokenCommand(subString, SPACE, character, state));
         }
 
         if (isProcessingNonTextValue(state, character)) {
-            return isNumberRelatedCharacter(character) ? Optional.of(new TokenCommand(NUMBER, character, state)) : Optional.of(new TokenCommand(BOOLEAN, character, state));
+            return isNumberRelatedCharacter(character) ? Optional.of(new TokenCommand(subString, NUMBER, character, state)) : Optional.of(new TokenCommand(subString, BOOLEAN, character, state));
         }
 
-        return findToken(character).map(token -> new TokenCommand(token, character, state));
+        return findToken(character).map(token -> new TokenCommand(subString, token, character, state));
     }
 
     private static boolean isProcessingNonTextValue(WriterState state, String character) {
