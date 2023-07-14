@@ -202,4 +202,26 @@ class JsonParserTest {
         assertThat(result.jsonNodes()[3].identifier()).isEqualTo("married");
         assertThat(result.jsonNodes()[3].content()).isEqualTo(true);
     }
+
+    @Test
+    void simpleJsonWith1NestedObject() {
+        var result = JsonParser.parse("""
+                {
+                  "person": {
+                    "name": "Laurens",
+                    "age": 36
+                  }
+                }""");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("person");
+        assertThat(result.jsonNodes()[0].content()).isInstanceOf(JsonObject.class);
+
+        var nestedObject = (JsonObject) result.jsonNodes()[0].content();
+        assertThat(nestedObject.jsonNodes()[0].identifier()).isEqualTo("name");
+        assertThat(nestedObject.jsonNodes()[0].content()).isEqualTo("Laurens");
+        assertThat(nestedObject.jsonNodes()[1].identifier()).isEqualTo("age");
+        assertThat(nestedObject.jsonNodes()[1].content()).isEqualTo(36);
+    }
 }
