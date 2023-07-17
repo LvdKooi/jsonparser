@@ -4,8 +4,8 @@ import nl.kooi.jsonparser.json.Token;
 import nl.kooi.jsonparser.json.WriterState;
 
 public record TokenCommand(
-        String remainingString,
+        char[] stillToBeProcessed,
         Token token,
-        String character,
+        char character,
         WriterState state) {
 }

@@ -1,39 +1,32 @@
 package nl.kooi.jsonparser.json;
 
-import java.util.Arrays;
+import java.util.Optional;
 
 public enum Token {
-    SEMI_COLON(":", true),
-    D_QUOTE("\"", true),
-    COMMA(",", true),
-    SQ_BRACKET_OPEN("[", true),
-    SQ_BRACKET_CLOSED("]", true),
-    BRACE_OPEN("{", true),
-    BRACE_CLOSED("}", true),
+    SEMI_COLON(':', true),
+    D_QUOTE('"', true),
+    COMMA(',', true),
+    SQ_BRACKET_OPEN('[', true),
+    SQ_BRACKET_CLOSED(']', true),
+    BRACE_OPEN('{', true),
+    BRACE_CLOSED('}', true),
     TEXT(null, false),
     BOOLEAN(null, false),
     NUMBER(null, false),
-    SPACE(" ", false);
+    SPACE(' ', false);
 
-    private final String matchingString;
+    private final Character matchingCharacter;
     private final boolean jsonFormatToken;
 
 
-    Token(String matchingString, boolean jsonFormatToken) {
-        this.matchingString = matchingString;
+    Token(Character matchingString, boolean jsonFormatToken) {
+        this.matchingCharacter = matchingString;
         this.jsonFormatToken = jsonFormatToken;
 
     }
 
-    public String getMatchingString() {
-        return matchingString;
-    }
-
-    public static boolean isJsonFormatToken(String tokenString) {
-        return Arrays.stream(Token.values())
-                .filter(token -> token.matchingString != null)
-                .filter(token -> token.matchingString.equals(tokenString))
-                .anyMatch(token -> token.jsonFormatToken);
+    public Optional<Character> getMatchingCharacter() {
+        return Optional.ofNullable(matchingCharacter);
     }
 
     public boolean isJsonFormatToken() {

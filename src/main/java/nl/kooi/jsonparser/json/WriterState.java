@@ -60,20 +60,20 @@ public record WriterState(JsonObject mainObject,
         return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, this.currentValue, this.currentArray, !this.writingTextField, this.characterCounter);
     }
 
-    public WriterState writeCharacterToIdentifier(String character) {
-        return new WriterState(this.mainObject, this.tokenStack, FieldState.identifier(this.identifier.value().concat(character), this.identifier.status()), this.currentValue, this.writingTextField, this.characterCounter);
+    public WriterState writeCharacterToIdentifier(Character character) {
+        return new WriterState(this.mainObject, this.tokenStack, FieldState.identifier(this.identifier.value().concat(character.toString()), this.identifier.status()), this.currentValue, this.writingTextField, this.characterCounter);
     }
 
-    public WriterState writeCharacterToValueField(String character) {
+    public WriterState writeCharacterToValueField(char character) {
         return updateValueField(concatValueField(currentValue.value(), character));
     }
 
-    static String concatValueField(Object currentValue, String character) {
+    static String concatValueField(Object currentValue, char character) {
         return Optional.ofNullable(currentValue)
                 .filter(String.class::isInstance)
                 .map(String.class::cast)
-                .map(str -> str.concat(character))
-                .orElse(character);
+                .map(str -> str.concat(Character.valueOf(character).toString()))
+                .orElseGet(() -> Character.valueOf(character).toString());
     }
 
     public WriterState createArrayContentField() {

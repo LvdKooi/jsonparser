@@ -22,10 +22,11 @@ import static nl.kooi.jsonparser.json.WriterStatus.*;
 public class JsonParser {
 
     public static JsonObject parse(String objectString) {
+
         var finalState = new WriterState();
 
         while (finalState.characterCounter() != objectString.length()) {
-            finalState = createTokenCommand(objectString.substring(finalState.characterCounter()), Character.valueOf(objectString.charAt(finalState.characterCounter())).toString(), finalState)
+            finalState = createTokenCommand(objectString.substring(finalState.characterCounter()).toCharArray(), objectString.charAt(finalState.characterCounter()), finalState)
                     .map(JsonParser::handleToken)
                     .orElse(finalState).incrementCharacterCounter();
         }
@@ -35,12 +36,12 @@ public class JsonParser {
 
     private static WriterState handleToken(TokenCommand tokenCommand) {
         UnaryOperator<WriterState> handler = switch (tokenCommand.token()) {
-            case BRACE_OPEN -> writerState -> handleOpenBrace(writerState, tokenCommand.remainingString());
+            case BRACE_OPEN -> writerState -> handleOpenBrace(writerState, tokenCommand);
             case D_QUOTE -> JsonParser::handleDoubleQuote;
             case BRACE_CLOSED -> JsonParser::handleClosingBrace;
             case SEMI_COLON -> JsonParser::handleSemiColon;
             case COMMA -> JsonParser::handleComma;
-            case TEXT, BOOLEAN, NUMBER -> writerState -> writeCharacterToState(writerState, tokenCommand.character());
+            case TEXT, BOOLEAN, NUMBER -> writerState -> writeCharacterToState(writerState, tokenCommand);
             case SQ_BRACKET_OPEN -> JsonParser::handleOpenSquareBracket;
             case SQ_BRACKET_CLOSED -> JsonParser::handleClosedSquareBracket;
             default -> UnaryOperator.identity();
@@ -53,10 +54,10 @@ public class JsonParser {
         return state.getLastToken().filter(tok -> token == tok).filter(tok -> tok == TEXT).map(tokenRemainsText -> writerStateFunction.apply(state)).orElseGet(() -> writerStateFunction.apply(state.addToken(token)));
     }
 
-    private static WriterState writeCharacterToState(WriterState state, String character) {
+    private static WriterState writeCharacterToState(WriterState state, TokenCommand tokenCommand) {
         return switch (state.identifierStatus()) {
-            case WRITING -> state.writeCharacterToIdentifier(character);
-            case FINISHED -> state.writeCharacterToValueField(character);
+            case WRITING -> state.writeCharacterToIdentifier(tokenCommand.character());
+            case FINISHED -> state.writeCharacterToValueField(tokenCommand.character());
             default -> state;
         };
     }
@@ -112,34 +113,34 @@ public class JsonParser {
         return Optional.empty();
     }
 
-    private static WriterState handleOpenBrace(WriterState state, String leftOverString) {
+    private static WriterState handleOpenBrace(WriterState state, TokenCommand tokenCommand) {
         if (state.mainObject() == null) {
 
             return hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED) ? state.addInitialMainObject() : state;
 
         }
 
-        return handleNestedObject(state, leftOverString);
+        return handleNestedObject(state, tokenCommand.stillToBeProcessed());
     }
 
-    private static WriterState handleNestedObject(WriterState state, String leftOverString) {
-        var nestedObjectString = getNestedObjectString(leftOverString);
+    private static WriterState handleNestedObject(WriterState state, char[] stillToBeProcessed) {
+        var nestedObjectString = getNestedObjectString(stillToBeProcessed);
 
         var updatedState = state.incrementCharacterCounterBy(nestedObjectString.length());
         return updatedState.writeObjectToValueField(JsonParser.parse(nestedObjectString));
     }
 
-    private static String getNestedObjectString(String stillToBeProcessed) {
+    private static String getNestedObjectString(char[] stillToBeProcessed) {
         var openBraceCounter = 0;
         var currentString = "";
         var closedBraceCounter = 0;
 
-        for (var character : stillToBeProcessed.split("")) {
-            currentString = currentString.concat(character);
+        for (var character : stillToBeProcessed) {
+            currentString = currentString.concat(String.valueOf(character));
 
             switch (character) {
-                case "}" -> closedBraceCounter++;
-                case "{" -> openBraceCounter++;
+                case '}' -> closedBraceCounter++;
+                case '{' -> openBraceCounter++;
             }
 
             if (closedBraceCounter == openBraceCounter) {
@@ -166,39 +167,49 @@ public class JsonParser {
         return hasStatus(state::valueFieldStatus, WRITING) ? state.moveValueFieldToFinishState() : state;
     }
 
-    private static Optional<TokenCommand> createTokenCommand(String subString, String character, WriterState state) {
+    private static Optional<TokenCommand> createTokenCommand(char[] stillToBeProcessed, char character, WriterState state) {
         if (state.writingTextField() && !isDoubleQuote(character)) {
-            return Optional.of(new TokenCommand(subString, TEXT, character, state));
+            return Optional.of(new TokenCommand(stillToBeProcessed, TEXT, character, state));
         }
 
         if (!state.writingTextField() && isSpace(character)) {
-            return Optional.of(new TokenCommand(subString, SPACE, character, state));
+            return Optional.of(new TokenCommand(stillToBeProcessed, SPACE, character, state));
         }
 
         if (isProcessingNonTextValue(state, character)) {
-            return isNumberRelatedCharacter(character) ? Optional.of(new TokenCommand(subString, NUMBER, character, state)) : Optional.of(new TokenCommand(subString, BOOLEAN, character, state));
+            return isNumberRelatedCharacter(character) ? Optional.of(new TokenCommand(stillToBeProcessed, NUMBER, character, state)) : Optional.of(new TokenCommand(stillToBeProcessed, BOOLEAN, character, state));
         }
 
-        return findToken(character).map(token -> new TokenCommand(subString, token, character, state));
+        return findToken(character).map(token -> new TokenCommand(stillToBeProcessed, token, character, state));
     }
 
-    private static boolean isProcessingNonTextValue(WriterState state, String character) {
+    private static boolean isProcessingNonTextValue(WriterState state, char character) {
         return state.getLastToken().filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN)).isPresent() && findToken(character).filter(Token::isJsonFormatToken).isEmpty();
     }
 
-    private static Optional<Token> findToken(String character) {
-        return Arrays.stream(Token.values()).filter(Objects::nonNull).filter(token -> character.equals(token.getMatchingString())).findFirst();
+    private static Optional<Token> findToken(char character) {
+        return Arrays.stream(Token.values()).filter(Objects::nonNull).filter(token -> token.getMatchingCharacter().filter(tokenChar -> tokenChar.equals(character)).isPresent()).findFirst();
     }
 
-    private static boolean isDoubleQuote(String character) {
-        return D_QUOTE.getMatchingString().equals(character);
+    private static boolean isDoubleQuote(char character) {
+        return D_QUOTE.getMatchingCharacter()
+                .filter(tokenMatchesChar(character))
+                .isPresent();
     }
 
-    private static boolean isSpace(String character) {
-        return SPACE.getMatchingString().equals(character);
+    private static boolean isSpace(char character) {
+        return SPACE.getMatchingCharacter()
+                .filter(tokenMatchesChar(character))
+                .isPresent();
     }
 
-    private static boolean isNumberRelatedCharacter(String character) {
+    private static Predicate<Character> tokenMatchesChar(char character) {
+        return tokenCharacter -> Optional.ofNullable(tokenCharacter)
+                .filter(tokenChar -> tokenChar.equals(character))
+                .isPresent();
+    }
+
+    private static boolean isNumberRelatedCharacter(char character) {
         return isNumber(character) || isDecimalPoint(character) || isMinus(character);
     }
 
@@ -214,7 +225,7 @@ public class JsonParser {
         return t -> Set.of(tokens).contains(t);
     }
 
-    private static boolean isNumber(String character) {
+    private static boolean isNumber(char character) {
         try {
             Integer.valueOf(character);
             return true;
@@ -223,11 +234,11 @@ public class JsonParser {
         }
     }
 
-    private static boolean isDecimalPoint(String character) {
-        return ".".equals(character);
+    private static boolean isDecimalPoint(char character) {
+        return '.' == character;
     }
 
-    private static boolean isMinus(String character) {
-        return "-".equals(character);
+    private static boolean isMinus(char character) {
+        return '-' == character;
     }
 }
