@@ -108,13 +108,13 @@ public record WriterState(JsonObject mainObject,
     }
 
     public WriterState writeObjectToValueField(JsonObject parsedObject) {
-        var updatedState = new WriterState(this.mainObject, this.addToken(Token.BRACE_CLOSED).tokenStack, OBJECT, this.identifier, new FieldState<>(parsedObject, OBJECT, FINISHED), this.currentArray, false, this.characterCounter);
+        var updatedState = new WriterState(this.mainObject, this.addToken(Token.BRACE_CLOSED).tokenStack, this.currentFieldType != ARRAY ? OBJECT : ARRAY, this.identifier, new FieldState<>(parsedObject, OBJECT, FINISHED), this.currentArray, false, this.characterCounter);
 
-        return updatedState.flushNode();
+        return updatedState.currentFieldType == ARRAY ? updatedState.addValueToArray() : updatedState.flushNode();
     }
 
     private Object formatType(FieldState<?> fieldState) {
-        if (fieldState.fieldType() == STRING) {
+        if (fieldState.fieldType() == STRING || fieldState.fieldType() == OBJECT) {
             return fieldState.value();
         }
 
@@ -136,7 +136,6 @@ public record WriterState(JsonObject mainObject,
     private WriterState flushNode() {
         var jsonNodes = mainObject.jsonNodes();
         var valueToBeFlushed = currentFieldType == ARRAY ? currentArray : currentValue.value();
-
         var node = createJsonNodeOfCorrectType(new JsonNode(identifier.value(), valueToBeFlushed));
 
         if (jsonNodes == null) {

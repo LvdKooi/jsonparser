@@ -1,9 +1,11 @@
 package nl.kooi.jsonparser.parser;
 
+import nl.kooi.jsonparser.json.JsonNode;
 import nl.kooi.jsonparser.json.JsonObject;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -101,18 +103,65 @@ class JsonParserTest {
     }
 
     @Test
-    void anArrayFieldWithAMixedArray() {
+    void anArrayFieldWithObjectArray() {
         var result = JsonParser.parse("""
                 {
-                  "children": [1, true, "hello", -2, -3.86, false, "world"]
+                  "children": [       {
+                  "name": "Laurens",
+                  "sign": "Taurus"
+                },   
+                {
+                  "name": "Andreas",
+                  "sign": "Scorpius"
+                }]
                 }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(1, true, "hello", -2, -3.86, false, "world"));
+        assertThat(result.jsonNodes()[0].content()).isInstanceOf(List.class);
+        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(0)).jsonNodes()).hasSize(2);
+        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(0)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Laurens"), new JsonNode("sign", "Taurus")));
+        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).hasSize(2);
+        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Andreas"), new JsonNode("sign", "Scorpius")));
     }
 
+    @Test
+    void anArrayFieldWithAMixedArray() {
+        var result = JsonParser.parse("""
+                {
+                  "children": [1, true, "hello", -2, -3.86, false, "world",   
+                {
+                  "name": "Andreas",
+                  "sign": "Scorpius"
+                }]
+                }""");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
+        assertThat(result.jsonNodes()[0].content()).isInstanceOf(ArrayList.class);
+
+        var content = (ArrayList) result.jsonNodes()[0].content();
+
+        assertThat(content).hasSize(8);
+        assertThat(content.get(0)).isEqualTo(1);
+        assertThat(content.get(1)).isEqualTo(true);
+        assertThat(content.get(2)).isEqualTo("hello");
+        assertThat(content.get(3)).isEqualTo(-2);
+        assertThat(content.get(4)).isEqualTo(-3.86);
+        assertThat(content.get(5)).isEqualTo(false);
+        assertThat(content.get(6)).isEqualTo("world");
+        assertThat(content.get(7)).isInstanceOf(JsonObject.class);
+
+        var jsonObject = (JsonObject) content.get(7);
+
+        assertThat(jsonObject.jsonNodes()).hasSize(2);
+        assertThat(jsonObject.jsonNodes()[0].identifier()).isEqualTo("name");
+        assertThat(jsonObject.jsonNodes()[0].content()).isEqualTo("Andreas");
+        assertThat(jsonObject.jsonNodes()[1].identifier()).isEqualTo("sign");
+        assertThat(jsonObject.jsonNodes()[1].content()).isEqualTo("Scorpius");
+    }
 
     @Test
     @Disabled
