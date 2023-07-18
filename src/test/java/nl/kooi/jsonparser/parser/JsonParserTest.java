@@ -1,5 +1,6 @@
 package nl.kooi.jsonparser.parser;
 
+import nl.kooi.jsonparser.json.JsonNode;
 import nl.kooi.jsonparser.json.JsonObject;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -98,6 +99,31 @@ class JsonParserTest {
         assertThat(result.jsonNodes().length).isEqualTo(1);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
         assertThat(result.jsonNodes()[0].content()).isEqualTo(Collections.emptyList());
+    }
+
+    @Test
+    void anArrayFieldWithObjectArray() {
+        var result = JsonParser.parse("""
+                {
+                  "children": [       {
+                  "name": "Laurens",
+                  "sign": "Taurus"
+                },   
+                {
+                  "name": "Andreas",
+                  "sign": "Cancer"
+                }
+                ]
+                }""");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
+        assertThat(result.jsonNodes()[0].content()).isInstanceOf(List.class);
+        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(0)).jsonNodes()).hasSize(2);
+        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(0)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Laurens"), new JsonNode("sign", "Taurus")));
+        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).hasSize(2);
+        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Andreas"), new JsonNode("sign", "Cancer")));
     }
 
     @Test
