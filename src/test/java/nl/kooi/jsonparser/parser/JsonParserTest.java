@@ -112,7 +112,7 @@ class JsonParserTest {
                 },   
                 {
                   "name": "Andreas",
-                  "sign": "Cancer"
+                  "sign": "Scorpius"
                 }]
                 }""");
 
@@ -123,7 +123,7 @@ class JsonParserTest {
         assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(0)).jsonNodes()).hasSize(2);
         assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(0)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Laurens"), new JsonNode("sign", "Taurus")));
         assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).hasSize(2);
-        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Andreas"), new JsonNode("sign", "Cancer")));
+        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Andreas"), new JsonNode("sign", "Scorpius")));
     }
 
     @Test
@@ -133,7 +133,7 @@ class JsonParserTest {
                   "children": [1, true, "hello", -2, -3.86, false, "world",   
                 {
                   "name": "Andreas",
-                  "sign": "Cancer"
+                  "sign": "Scorpius"
                 }]
                 }""");
 
@@ -160,7 +160,7 @@ class JsonParserTest {
         assertThat(jsonObject.jsonNodes()[0].identifier()).isEqualTo("name");
         assertThat(jsonObject.jsonNodes()[0].content()).isEqualTo("Andreas");
         assertThat(jsonObject.jsonNodes()[1].identifier()).isEqualTo("sign");
-        assertThat(jsonObject.jsonNodes()[1].content()).isEqualTo("Cancer");
+        assertThat(jsonObject.jsonNodes()[1].content()).isEqualTo("Scorpius");
     }
 
     @Test
