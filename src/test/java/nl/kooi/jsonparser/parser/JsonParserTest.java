@@ -5,6 +5,7 @@ import nl.kooi.jsonparser.json.JsonObject;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -112,8 +113,7 @@ class JsonParserTest {
                 {
                   "name": "Andreas",
                   "sign": "Cancer"
-                }
-                ]
+                }]
                 }""");
 
         assertThat(result).isNotNull();
@@ -130,15 +130,38 @@ class JsonParserTest {
     void anArrayFieldWithAMixedArray() {
         var result = JsonParser.parse("""
                 {
-                  "children": [1, true, "hello", -2, -3.86, false, "world"]
+                  "children": [1, true, "hello", -2, -3.86, false, "world",   
+                {
+                  "name": "Andreas",
+                  "sign": "Cancer"
+                }]
                 }""");
 
         assertThat(result).isNotNull();
         assertThat(result.jsonNodes().length).isEqualTo(1);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(1, true, "hello", -2, -3.86, false, "world"));
-    }
+        assertThat(result.jsonNodes()[0].content()).isInstanceOf(ArrayList.class);
 
+        var content = (ArrayList) result.jsonNodes()[0].content();
+
+        assertThat(content).hasSize(8);
+        assertThat(content.get(0)).isEqualTo(1);
+        assertThat(content.get(1)).isEqualTo(true);
+        assertThat(content.get(2)).isEqualTo("hello");
+        assertThat(content.get(3)).isEqualTo(-2);
+        assertThat(content.get(4)).isEqualTo(-3.86);
+        assertThat(content.get(5)).isEqualTo(false);
+        assertThat(content.get(6)).isEqualTo("world");
+        assertThat(content.get(7)).isInstanceOf(JsonObject.class);
+
+        var jsonObject = (JsonObject) content.get(7);
+
+        assertThat(jsonObject.jsonNodes()).hasSize(2);
+        assertThat(jsonObject.jsonNodes()[0].identifier()).isEqualTo("name");
+        assertThat(jsonObject.jsonNodes()[0].content()).isEqualTo("Andreas");
+        assertThat(jsonObject.jsonNodes()[1].identifier()).isEqualTo("sign");
+        assertThat(jsonObject.jsonNodes()[1].content()).isEqualTo("Cancer");
+    }
 
     @Test
     @Disabled

@@ -126,7 +126,7 @@ public class JsonParser {
     private static WriterState handleNestedObject(WriterState state, char[] stillToBeProcessed) {
         var nestedObjectString = getNestedObjectString(stillToBeProcessed);
 
-        var updatedState = state.incrementCharacterCounterBy(nestedObjectString.length());
+        var updatedState = state.incrementCharacterCounterBy(nestedObjectString.length() - 1);
         return updatedState.writeObjectToValueField(JsonParser.parse(nestedObjectString));
     }
 
