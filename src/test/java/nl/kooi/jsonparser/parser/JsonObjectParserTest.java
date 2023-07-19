@@ -12,18 +12,18 @@ import java.util.List;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 
-class JsonParserTest {
+class JsonObjectParserTest {
 
     @Test
     void onlyBraces() {
-        assertThat(JsonParser.parse("{}"))
+        assertThat(JsonObjectParser.parse("{}"))
                 .isNotNull()
                 .isEqualTo(new JsonObject(null));
     }
 
     @Test
     void oneStringField() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "name": "Laurens"
                 }""");
@@ -36,7 +36,7 @@ class JsonParserTest {
 
     @Test
     void oneStringFieldWithTokenCharacters() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                    "name": "{[,true false:]}"
                 }""");
@@ -49,7 +49,7 @@ class JsonParserTest {
 
     @Test
     void oneNumberField() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "weight": 79.85
                 }""");
@@ -62,7 +62,7 @@ class JsonParserTest {
 
     @Test
     void oneBooleanField() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "married": false
                 }""");
@@ -75,7 +75,7 @@ class JsonParserTest {
 
     @Test
     void twoStringFields() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "name": "Laurens",
                   "sign": "Taurus"
@@ -91,7 +91,7 @@ class JsonParserTest {
 
     @Test
     void anArrayFieldWithEmptyArray() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "children": []
                 }""");
@@ -104,7 +104,7 @@ class JsonParserTest {
 
     @Test
     void anArrayFieldWithObjectArray() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "children": [       {
                   "name": "Laurens",
@@ -128,7 +128,7 @@ class JsonParserTest {
 
     @Test
     void anArrayFieldWithAMixedArray() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "children": [1, true, "hello", -2, -3.86, false, "world",   
                 {
@@ -166,7 +166,7 @@ class JsonParserTest {
     @Test
     @Disabled
     void anArrayFieldWithEmptyArrays() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "children": [[],[],[]]
                 }""");
@@ -179,7 +179,7 @@ class JsonParserTest {
 
     @Test
     void aStringArrayField() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "children": ["Anthony", "Marvin"]
                 }""");
@@ -192,7 +192,7 @@ class JsonParserTest {
 
     @Test
     void aNumberArrayFieldOfIntegers() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "ages": [12, 9]
                 }""");
@@ -206,7 +206,7 @@ class JsonParserTest {
 
     @Test
     void aNumberArrayFieldOfDoubles() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "weights": [12.99, 9.87]
                 }""");
@@ -219,7 +219,7 @@ class JsonParserTest {
 
     @Test
     void aBooleanArrayField() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "bools": [true, false, true]
                 }""");
@@ -233,7 +233,7 @@ class JsonParserTest {
 
     @Test
     void fourFieldsOfDifferentTypes() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "name": "Laurens",
                   "age": 36,
@@ -254,7 +254,7 @@ class JsonParserTest {
 
     @Test
     void simpleJsonWith1NestedObject() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "person": {
                     "name": "Laurens",
@@ -276,7 +276,7 @@ class JsonParserTest {
 
     @Test
     void simpleJsonWith2NestedObject() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "person1": {
                     "name": "Laurens",
@@ -309,7 +309,7 @@ class JsonParserTest {
 
     @Test
     void jsonWith1NestedObjectContaining1NestedObject() {
-        var result = JsonParser.parse("""
+        var result = JsonObjectParser.parse("""
                 {
                   "person1": {
                     "name": "Laurens",
