@@ -18,6 +18,7 @@ import static nl.kooi.jsonparser.json.FieldType.ARRAY;
 import static nl.kooi.jsonparser.json.FieldType.STRING;
 import static nl.kooi.jsonparser.json.Token.*;
 import static nl.kooi.jsonparser.json.WriterStatus.*;
+import static nl.kooi.jsonparser.parser.ParserUtil.getNestedArrayString;
 import static nl.kooi.jsonparser.parser.ParserUtil.getNestedObjectString;
 
 public class JsonObjectParser {
@@ -43,8 +44,7 @@ public class JsonObjectParser {
             case SEMI_COLON -> JsonObjectParser::handleSemiColon;
             case COMMA -> JsonObjectParser::handleComma;
             case TEXT, BOOLEAN, NUMBER -> writerState -> writeCharacterToState(writerState, tokenCommand);
-            case SQ_BRACKET_OPEN -> JsonObjectParser::handleOpenSquareBracket;
-            case SQ_BRACKET_CLOSED -> JsonObjectParser::handleClosedSquareBracket;
+            case SQ_BRACKET_OPEN -> writerState -> handleOpenSquareBracket(writerState, tokenCommand);
             default -> UnaryOperator.identity();
         };
 
@@ -68,26 +68,15 @@ public class JsonObjectParser {
     }
 
     private static WriterState handleComma(WriterState state) {
-        if (hasStatusNotIn(state::valueFieldStatus, NOT_STARTED)) {
-
-            if (state.currentFieldType() != ARRAY) {
-                return state.moveValueFieldToFinishState();
-            }
-
-            return state.addValueToArray();
-        }
-
         return state;
     }
 
     private static WriterState handleDoubleQuote(WriterState state) {
         var updatedState = state.receiveDoubleQuote();
 
-        return updateStateWithDoubleQuoteForIdentifier(updatedState).orElseGet(() -> updateStateWithDoubleQuoteForValueField(updatedState).orElseGet(() -> updateStateWithDoubleQuoteForArrayValue(updatedState).orElse(updatedState)));
-    }
-
-    private static Optional<WriterState> updateStateWithDoubleQuoteForArrayValue(WriterState updatedState) {
-        return Optional.ofNullable(updatedState).filter(state -> ARRAY == state.currentFieldType()).map(WriterState::addValueToArray);
+        return updateStateWithDoubleQuoteForIdentifier(updatedState)
+                .orElseGet(() -> updateStateWithDoubleQuoteForValueField(updatedState)
+                        .orElse(updatedState));
     }
 
     private static Optional<WriterState> updateStateWithDoubleQuoteForValueField(WriterState updatedState) {
@@ -118,7 +107,6 @@ public class JsonObjectParser {
         if (state.mainObject() == null) {
 
             return hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED) ? state.addInitialMainObject() : state;
-
         }
 
         return handleNestedObject(state, tokenCommand.stillToBeProcessed());
@@ -128,19 +116,23 @@ public class JsonObjectParser {
         var nestedObjectString = getNestedObjectString(stillToBeProcessed);
 
         var updatedState = state.incrementCharacterCounterBy(nestedObjectString.length() - 1);
-        return updatedState.writeObjectToValueField(JsonObjectParser.parse(nestedObjectString));
+        var nestedObject = JsonObjectParser.parse(nestedObjectString);
+        return updatedState.writeObjectToValueField(nestedObject);
     }
 
     private static WriterState handleClosingBrace(WriterState state) {
         return finishValueField(state);
     }
 
-    private static WriterState handleOpenSquareBracket(WriterState state) {
-        return state.createArrayContentField();
+    private static WriterState handleOpenSquareBracket(WriterState state, TokenCommand command) {
+        return handleNestedArray(state, command.stillToBeProcessed());
     }
 
-    private static WriterState handleClosedSquareBracket(WriterState state) {
-        return hasStatus(state.currentValue()::status, WRITING) ? state.addValueToArray().moveValueFieldToFinishState() : state.moveValueFieldToFinishState();
+    private static WriterState handleNestedArray(WriterState state, char[] stillToBeProcessed) {
+        var nestedArrayString = getNestedArrayString(stillToBeProcessed);
+
+        var updatedState = state.incrementCharacterCounterBy(nestedArrayString.length() - 1);
+        return updatedState.writeArrayToValueField(JsonArrayParser.parse(nestedArrayString));
     }
 
     private static WriterState finishValueField(WriterState state) {

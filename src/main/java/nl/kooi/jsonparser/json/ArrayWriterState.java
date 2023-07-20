@@ -73,14 +73,6 @@ public record ArrayWriterState(List<Object> array,
         return new ArrayWriterState(this.array, this.tokenStack, new FieldState<>(newObjectToBeAdded, this.currentValue.fieldType(), WRITING), this.writingTextField, this.characterCounter);
     }
 
-    public ArrayWriterState moveIdentifierToWritingState() {
-        return new ArrayWriterState(this.array, this.tokenStack, this.currentValue(), this.writingTextField, this.characterCounter);
-    }
-
-    public ArrayWriterState moveIdentifierToFinishState() {
-        return new ArrayWriterState(this.array, this.tokenStack, this.currentValue(), this.writingTextField, this.characterCounter);
-    }
-
     public ArrayWriterState moveValueFieldToFinishState() {
         return addValueToArray();
     }

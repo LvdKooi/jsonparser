@@ -2,7 +2,8 @@ package nl.kooi.jsonparser.parser;
 
 import nl.kooi.jsonparser.json.JsonNode;
 import nl.kooi.jsonparser.json.JsonObject;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -87,148 +88,6 @@ class JsonObjectParserTest {
         assertThat(result.jsonNodes()[0].content()).isEqualTo("Laurens");
         assertThat(result.jsonNodes()[1].identifier()).isEqualTo("sign");
         assertThat(result.jsonNodes()[1].content()).isEqualTo("Taurus");
-    }
-
-    @Test
-    void anArrayFieldWithEmptyArray() {
-        var result = JsonObjectParser.parse("""
-                {
-                  "children": []
-                }""");
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(Collections.emptyList());
-    }
-
-    @Test
-    void anArrayFieldWithObjectArray() {
-        var result = JsonObjectParser.parse("""
-                {
-                  "children": [       {
-                  "name": "Laurens",
-                  "sign": "Taurus"
-                },   
-                {
-                  "name": "Andreas",
-                  "sign": "Scorpius"
-                }]
-                }""");
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
-        assertThat(result.jsonNodes()[0].content()).isInstanceOf(List.class);
-        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(0)).jsonNodes()).hasSize(2);
-        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(0)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Laurens"), new JsonNode("sign", "Taurus")));
-        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).hasSize(2);
-        assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Andreas"), new JsonNode("sign", "Scorpius")));
-    }
-
-    @Test
-    void anArrayFieldWithAMixedArray() {
-        var result = JsonObjectParser.parse("""
-                {
-                  "children": [1, true, "hello", -2, -3.86, false, "world",   
-                {
-                  "name": "Andreas",
-                  "sign": "Scorpius"
-                }]
-                }""");
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
-        assertThat(result.jsonNodes()[0].content()).isInstanceOf(ArrayList.class);
-
-        var content = (ArrayList) result.jsonNodes()[0].content();
-
-        assertThat(content).hasSize(8);
-        assertThat(content.get(0)).isEqualTo(1);
-        assertThat(content.get(1)).isEqualTo(true);
-        assertThat(content.get(2)).isEqualTo("hello");
-        assertThat(content.get(3)).isEqualTo(-2);
-        assertThat(content.get(4)).isEqualTo(-3.86);
-        assertThat(content.get(5)).isEqualTo(false);
-        assertThat(content.get(6)).isEqualTo("world");
-        assertThat(content.get(7)).isInstanceOf(JsonObject.class);
-
-        var jsonObject = (JsonObject) content.get(7);
-
-        assertThat(jsonObject.jsonNodes()).hasSize(2);
-        assertThat(jsonObject.jsonNodes()[0].identifier()).isEqualTo("name");
-        assertThat(jsonObject.jsonNodes()[0].content()).isEqualTo("Andreas");
-        assertThat(jsonObject.jsonNodes()[1].identifier()).isEqualTo("sign");
-        assertThat(jsonObject.jsonNodes()[1].content()).isEqualTo("Scorpius");
-    }
-
-    @Test
-    @Disabled
-    void anArrayFieldWithEmptyArrays() {
-        var result = JsonObjectParser.parse("""
-                {
-                  "children": [[],[],[]]
-                }""");
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(Collections.emptyList());
-    }
-
-    @Test
-    void aStringArrayField() {
-        var result = JsonObjectParser.parse("""
-                {
-                  "children": ["Anthony", "Marvin"]
-                }""");
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of("Anthony", "Marvin"));
-    }
-
-    @Test
-    void aNumberArrayFieldOfIntegers() {
-        var result = JsonObjectParser.parse("""
-                {
-                  "ages": [12, 9]
-                }""");
-
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("ages");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(12, 9));
-    }
-
-    @Test
-    void aNumberArrayFieldOfDoubles() {
-        var result = JsonObjectParser.parse("""
-                {
-                  "weights": [12.99, 9.87]
-                }""");
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("weights");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(12.99, 9.87));
-    }
-
-    @Test
-    void aBooleanArrayField() {
-        var result = JsonObjectParser.parse("""
-                {
-                  "bools": [true, false, true]
-                }""");
-
-
-        assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(1);
-        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("bools");
-        assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(true, false, true));
     }
 
     @Test
@@ -339,5 +198,153 @@ class JsonObjectParserTest {
         assertThat(nestedObject2.jsonNodes()[0].content()).isEqualTo("Andreas");
         assertThat(nestedObject2.jsonNodes()[1].identifier()).isEqualTo("age");
         assertThat(nestedObject2.jsonNodes()[1].content()).isEqualTo(32);
+    }
+
+    @Nested
+    @DisplayName("Tests for JSON objects with an array")
+    class ArrayTests {
+
+        @Test
+        void anArrayFieldWithEmptyArray() {
+            var result = JsonObjectParser.parse("""
+                    {
+                      "children": []
+                    }""");
+
+            assertThat(result).isNotNull();
+            assertThat(result.jsonNodes().length).isEqualTo(1);
+            assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
+            assertThat(result.jsonNodes()[0].content()).isEqualTo(Collections.emptyList());
+        }
+
+        @Test
+        void anArrayFieldWithObjectArray() {
+            var result = JsonObjectParser.parse("""
+                    {
+                      "children": [       {
+                      "name": "Laurens",
+                      "sign": "Taurus"
+                    },   
+                    {
+                      "name": "Andreas",
+                      "sign": "Scorpius"
+                    }]
+                    }""");
+
+            assertThat(result).isNotNull();
+            assertThat(result.jsonNodes().length).isEqualTo(1);
+            assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
+            assertThat(result.jsonNodes()[0].content()).isInstanceOf(List.class);
+            assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(0)).jsonNodes()).hasSize(2);
+            assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(0)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Laurens"), new JsonNode("sign", "Taurus")));
+            assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).hasSize(2);
+            assertThat(((JsonObject) ((List) result.jsonNodes()[0].content()).get(1)).jsonNodes()).containsAll(List.of(new JsonNode("name", "Andreas"), new JsonNode("sign", "Scorpius")));
+        }
+
+        @Test
+        void anArrayFieldWithAMixedArray() {
+            var result = JsonObjectParser.parse("""
+                    {
+                      "children": [1, true, "hello", -2, -3.86, false, "world",   
+                    {
+                      "name": "Andreas",
+                      "sign": "Scorpius"
+                    }]
+                    }""");
+
+            assertThat(result).isNotNull();
+            assertThat(result.jsonNodes().length).isEqualTo(1);
+            assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
+            assertThat(result.jsonNodes()[0].content()).isInstanceOf(ArrayList.class);
+
+            var content = (ArrayList) result.jsonNodes()[0].content();
+
+            assertThat(content).hasSize(8);
+            assertThat(content.get(0)).isEqualTo(1);
+            assertThat(content.get(1)).isEqualTo(true);
+            assertThat(content.get(2)).isEqualTo("hello");
+            assertThat(content.get(3)).isEqualTo(-2);
+            assertThat(content.get(4)).isEqualTo(-3.86);
+            assertThat(content.get(5)).isEqualTo(false);
+            assertThat(content.get(6)).isEqualTo("world");
+            assertThat(content.get(7)).isInstanceOf(JsonObject.class);
+
+            var jsonObject = (JsonObject) content.get(7);
+
+            assertThat(jsonObject.jsonNodes()).hasSize(2);
+            assertThat(jsonObject.jsonNodes()[0].identifier()).isEqualTo("name");
+            assertThat(jsonObject.jsonNodes()[0].content()).isEqualTo("Andreas");
+            assertThat(jsonObject.jsonNodes()[1].identifier()).isEqualTo("sign");
+            assertThat(jsonObject.jsonNodes()[1].content()).isEqualTo("Scorpius");
+        }
+
+        @Test
+        void anArrayFieldWithEmptyArrays() {
+            var result = JsonObjectParser.parse("""
+                    {
+                      "children": [[],[],[]]
+                    }""");
+
+            assertThat(result).isNotNull();
+            assertThat(result.jsonNodes().length).isEqualTo(1);
+            assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
+            assertThat(result.jsonNodes()[0].content()).isEqualTo(
+                    List.of(
+                            Collections.emptyList(),
+                            Collections.emptyList(),
+                            Collections.emptyList()));
+        }
+
+        @Test
+        void aStringArrayField() {
+            var result = JsonObjectParser.parse("""
+                    {
+                      "children": ["Anthony", "Marvin"]
+                    }""");
+
+            assertThat(result).isNotNull();
+            assertThat(result.jsonNodes().length).isEqualTo(1);
+            assertThat(result.jsonNodes()[0].identifier()).isEqualTo("children");
+            assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of("Anthony", "Marvin"));
+        }
+
+        @Test
+        void aNumberArrayFieldOfIntegers() {
+            var result = JsonObjectParser.parse("""
+                    {
+                      "ages": [12, 9]
+                    }""");
+
+            assertThat(result).isNotNull();
+            assertThat(result.jsonNodes().length).isEqualTo(1);
+            assertThat(result.jsonNodes()[0].identifier()).isEqualTo("ages");
+            assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(12, 9));
+        }
+
+        @Test
+        void aNumberArrayFieldOfDoubles() {
+            var result = JsonObjectParser.parse("""
+                    {
+                      "weights": [12.99, 9.87]
+                    }""");
+
+            assertThat(result).isNotNull();
+            assertThat(result.jsonNodes().length).isEqualTo(1);
+            assertThat(result.jsonNodes()[0].identifier()).isEqualTo("weights");
+            assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(12.99, 9.87));
+        }
+
+        @Test
+        void aBooleanArrayField() {
+            var result = JsonObjectParser.parse("""
+                    {
+                      "bools": [true, false, true]
+                    }""");
+
+            assertThat(result).isNotNull();
+            assertThat(result.jsonNodes().length).isEqualTo(1);
+            assertThat(result.jsonNodes()[0].identifier()).isEqualTo("bools");
+            assertThat(result.jsonNodes()[0].content()).isEqualTo(List.of(true, false, true));
+        }
     }
 }

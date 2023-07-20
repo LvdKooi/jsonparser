@@ -35,12 +35,10 @@ public class JsonArrayParser {
         UnaryOperator<ArrayWriterState> handler = switch (tokenCommand.token()) {
             case BRACE_OPEN -> state -> JsonArrayParser.handleOpenBrace(state, tokenCommand);
             case D_QUOTE -> JsonArrayParser::handleDoubleQuote;
-            case BRACE_CLOSED -> JsonArrayParser::handleClosingBrace;
-            case SEMI_COLON -> JsonArrayParser::handleSemiColon;
             case COMMA -> JsonArrayParser::handleComma;
             case TEXT, BOOLEAN, NUMBER -> ArrayWriterState -> writeCharacterToState(tokenCommand.state(), tokenCommand);
             case SQ_BRACKET_OPEN -> state -> handleOpenSquareBracket(state, tokenCommand);
-            case SQ_BRACKET_CLOSED -> state -> JsonArrayParser.handleClosedSquareBracket(state, tokenCommand.stillToBeProcessed());
+            case SQ_BRACKET_CLOSED -> JsonArrayParser::handleClosedSquareBracket;
             default -> UnaryOperator.identity();
         };
 
@@ -48,18 +46,16 @@ public class JsonArrayParser {
     }
 
     private static ArrayWriterState handleToken(Token token, ArrayWriterState state, UnaryOperator<ArrayWriterState> ArrayWriterStateFunction) {
-        return state.getLastToken().filter(tok -> token == tok).filter(tok -> tok == TEXT).map(tokenRemainsText -> ArrayWriterStateFunction.apply(state)).orElseGet(() -> ArrayWriterStateFunction.apply(state.addToken(token)));
+        return state
+                .getLastToken()
+                .filter(tok -> token == tok)
+                .filter(tok -> tok == TEXT)
+                .map(tokenRemainsText -> ArrayWriterStateFunction.apply(state))
+                .orElseGet(() -> ArrayWriterStateFunction.apply(state.addToken(token)));
     }
 
     private static ArrayWriterState writeCharacterToState(ArrayWriterState state, ArrayTokenCommand tokenCommand) {
-        return switch (state.valueFieldStatus()) {
-            case WRITING -> state.writeCharacterToValueField(tokenCommand.character());
-            default -> state;
-        };
-    }
-
-    private static ArrayWriterState handleSemiColon(ArrayWriterState state) {
-        return state.moveValueFieldToNotStartedState();
+        return state.writeCharacterToValueField(tokenCommand.character());
     }
 
     private static ArrayWriterState handleComma(ArrayWriterState state) {
@@ -73,11 +69,7 @@ public class JsonArrayParser {
     private static ArrayWriterState handleDoubleQuote(ArrayWriterState state) {
         var updatedState = state.receiveDoubleQuote();
 
-        return updateStateWithDoubleQuoteForValueField(updatedState).orElseGet(() -> updateStateWithDoubleQuoteForArrayValue(updatedState).orElse(updatedState));
-    }
-
-    private static Optional<ArrayWriterState> updateStateWithDoubleQuoteForArrayValue(ArrayWriterState updatedState) {
-        return Optional.ofNullable(updatedState).map(ArrayWriterState::addValueToArray);
+        return updateStateWithDoubleQuoteForValueField(updatedState).orElse(updatedState);
     }
 
     private static Optional<ArrayWriterState> updateStateWithDoubleQuoteForValueField(ArrayWriterState updatedState) {
@@ -103,18 +95,12 @@ public class JsonArrayParser {
         return updatedState.writeObjectToValueField(JsonObjectParser.parse(nestedObjectString));
     }
 
-
-    private static ArrayWriterState handleClosingBrace(ArrayWriterState state) {
-        return finishValueField(state);
-    }
-
     private static ArrayWriterState handleOpenSquareBracket(ArrayWriterState state, ArrayTokenCommand command) {
         if (state.array() == null) {
             return hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED) ? state.addInitialArray() : state;
         }
 
         return handleNestedArray(state, command.stillToBeProcessed());
-
     }
 
     private static ArrayWriterState handleNestedArray(ArrayWriterState state, char[] stillToBeProcessed) {
@@ -127,9 +113,8 @@ public class JsonArrayParser {
         return updatedState.addArrayToArray(array);
     }
 
-
-    private static ArrayWriterState handleClosedSquareBracket(ArrayWriterState state, char[] stillToBeProcessed) {
-        return hasStatus(state.currentValue()::status, WRITING) ? state.addValueToArray().moveValueFieldToFinishState() : state.moveValueFieldToFinishState();
+    private static ArrayWriterState handleClosedSquareBracket(ArrayWriterState state) {
+        return finishValueField(state);
     }
 
     private static ArrayWriterState finishValueField(ArrayWriterState state) {
@@ -153,7 +138,12 @@ public class JsonArrayParser {
     }
 
     private static boolean isProcessingNonTextValue(ArrayWriterState state, char character) {
-        return state.getLastToken().filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN)).isPresent() && findToken(character).filter(Token::isJsonFormatToken).isEmpty();
+        return state
+                .getLastToken()
+                .filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN))
+                .isPresent() &&
+
+                findToken(character).filter(Token::isJsonFormatToken).isEmpty();
     }
 
     private static Optional<Token> findToken(char character) {
