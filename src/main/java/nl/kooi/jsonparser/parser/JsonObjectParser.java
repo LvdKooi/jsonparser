@@ -68,6 +68,10 @@ public class JsonObjectParser {
     }
 
     private static WriterState handleComma(WriterState state) {
+        if (hasStatusNotIn(state::valueFieldStatus, NOT_STARTED)) {
+            return state.moveValueFieldToFinishState();
+        }
+
         return state;
     }
 
