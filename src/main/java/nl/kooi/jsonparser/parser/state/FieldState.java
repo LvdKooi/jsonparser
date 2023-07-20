@@ -1,4 +1,4 @@
-package nl.kooi.jsonparser.json;
+package nl.kooi.jsonparser.parser.state;
 
 import java.util.Objects;
 

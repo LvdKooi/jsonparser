@@ -1,4 +1,6 @@
-package nl.kooi.jsonparser.json;
+package nl.kooi.jsonparser.parser.state;
+
+import nl.kooi.jsonparser.json.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,8 +8,8 @@ import java.util.Optional;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import static nl.kooi.jsonparser.json.FieldType.*;
-import static nl.kooi.jsonparser.json.WriterStatus.*;
+import static nl.kooi.jsonparser.parser.state.FieldType.*;
+import static nl.kooi.jsonparser.parser.state.WriterStatus.*;
 
 public record ArrayWriterState(List<Object> array,
                                Stack<Token> tokenStack,

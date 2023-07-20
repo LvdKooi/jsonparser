@@ -1,7 +1,7 @@
-package nl.kooi.jsonparser.parser;
+package nl.kooi.jsonparser.parser.command;
 
-import nl.kooi.jsonparser.json.Token;
-import nl.kooi.jsonparser.json.WriterState;
+import nl.kooi.jsonparser.parser.state.Token;
+import nl.kooi.jsonparser.parser.state.WriterState;
 
 public record TokenCommand(
         char[] stillToBeProcessed,

@@ -1,10 +1,12 @@
-package nl.kooi.jsonparser.json;
+package nl.kooi.jsonparser.parser.state;
+
+import nl.kooi.jsonparser.json.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static nl.kooi.jsonparser.json.FieldType.*;
-import static nl.kooi.jsonparser.json.WriterStatus.*;
+import static nl.kooi.jsonparser.parser.state.FieldType.*;
+import static nl.kooi.jsonparser.parser.state.WriterStatus.*;
 
 public record WriterState(JsonObject mainObject,
                           Stack<Token> tokenStack,

@@ -1,20 +1,21 @@
 package nl.kooi.jsonparser.parser;
 
 
-import nl.kooi.jsonparser.json.ArrayWriterState;
-import nl.kooi.jsonparser.json.Token;
-import nl.kooi.jsonparser.json.WriterStatus;
+import nl.kooi.jsonparser.parser.command.ArrayTokenCommand;
+import nl.kooi.jsonparser.parser.state.ArrayWriterState;
+import nl.kooi.jsonparser.parser.state.Token;
+import nl.kooi.jsonparser.parser.state.WriterStatus;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-import static nl.kooi.jsonparser.json.FieldType.STRING;
-import static nl.kooi.jsonparser.json.Token.*;
-import static nl.kooi.jsonparser.json.WriterStatus.*;
-import static nl.kooi.jsonparser.parser.ParserUtil.getNestedArrayString;
-import static nl.kooi.jsonparser.parser.ParserUtil.getNestedObjectString;
+import static nl.kooi.jsonparser.parser.state.FieldType.STRING;
+import static nl.kooi.jsonparser.parser.state.Token.*;
+import static nl.kooi.jsonparser.parser.state.WriterStatus.*;
+import static nl.kooi.jsonparser.parser.util.ParserUtil.getNestedArrayString;
+import static nl.kooi.jsonparser.parser.util.ParserUtil.getNestedObjectString;
 
 public class JsonArrayParser {
 

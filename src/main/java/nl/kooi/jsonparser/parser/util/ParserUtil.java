@@ -1,8 +1,8 @@
-package nl.kooi.jsonparser.parser;
+package nl.kooi.jsonparser.parser.util;
 
 public class ParserUtil {
 
-    static String getNestedArrayString(char[] stillToBeProcessed) {
+    public static String getNestedArrayString(char[] stillToBeProcessed) {
         var openBraceCounter = 0;
         var currentString = "";
         var closedBraceCounter = 0;
@@ -23,7 +23,7 @@ public class ParserUtil {
         return currentString;
     }
 
-    static String getNestedObjectString(char[] stillToBeProcessed) {
+    public static String getNestedObjectString(char[] stillToBeProcessed) {
         var openBraceCounter = 0;
         var currentString = "";
         var closedBraceCounter = 0;
