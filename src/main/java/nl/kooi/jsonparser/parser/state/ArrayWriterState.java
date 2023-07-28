@@ -1,6 +1,6 @@
 package nl.kooi.jsonparser.parser.state;
 
-import nl.kooi.jsonparser.json.*;
+import nl.kooi.jsonparser.json.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -115,36 +115,6 @@ public record ArrayWriterState(List<Object> array,
         return new ArrayWriterState(this.array, this.tokenStack, new FieldState<>("", fieldType, WRITING), this.writingTextField, this.characterCounter);
     }
 
-    public ArrayWriterState moveValueFieldToNotStartedState() {
-        return new ArrayWriterState(this.array, this.tokenStack, new FieldState<>(new Object(), UNKNOWN, NOT_STARTED), this.writingTextField, this.characterCounter);
-    }
-
-    private boolean isDouble(FieldState<?> currentField) {
-        if (currentField.fieldType() != STRING) {
-            try {
-                Double.valueOf(((String) currentField.value()).trim());
-                return true;
-            } catch (NumberFormatException exc) {
-                return false;
-            }
-        }
-
-        return false;
-    }
-
-    private boolean isInteger(FieldState<?> currentField) {
-        if (currentField.fieldType() != STRING) {
-            try {
-                Integer.valueOf(((String) currentField.value()).trim());
-                return true;
-            } catch (NumberFormatException exc) {
-                return false;
-            }
-        }
-
-        return false;
-    }
-
     private Number handleNumberType(String numberString) {
         if (numberString == null) {
             return null;
@@ -156,16 +126,6 @@ public record ArrayWriterState(List<Object> array,
             return Double.valueOf(numberString);
         }
     }
-
-    private boolean isBoolean(FieldState<?> currentField) {
-        if (currentField.fieldType() != STRING) {
-            var value = ((String) currentField.value()).trim();
-            return "true".equals(value) || "false".equals(value);
-        }
-
-        return false;
-    }
-
 
     private boolean isNumber(String numberString) {
         try {
