@@ -1,12 +1,18 @@
 package nl.kooi.jsonparser.parser.state;
 
-import nl.kooi.jsonparser.json.*;
+import nl.kooi.jsonparser.json.JsonNode;
+import nl.kooi.jsonparser.json.JsonObject;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static nl.kooi.jsonparser.parser.state.FieldType.*;
+import static nl.kooi.jsonparser.parser.state.Token.BOOLEAN;
+import static nl.kooi.jsonparser.parser.state.Token.NUMBER;
+import static nl.kooi.jsonparser.parser.state.Token.*;
 import static nl.kooi.jsonparser.parser.state.WriterStatus.*;
+import static nl.kooi.jsonparser.parser.util.ParserUtil.findToken;
+import static nl.kooi.jsonparser.parser.util.ParserUtil.isIn;
 
 public record WriterState(JsonObject mainObject,
                           Stack<Token> tokenStack,
@@ -14,7 +20,7 @@ public record WriterState(JsonObject mainObject,
                           FieldState<String> identifier,
                           FieldState<?> currentValue,
                           boolean writingTextField,
-                          int characterCounter) {
+                          int characterCounter) implements JsonWriterState {
 
     public WriterState() {
         this(null, new Stack<>(), FieldType.UNKNOWN, FieldState.identifier("", WriterStatus.NOT_STARTED), new FieldState<>(new Object(), UNKNOWN, WriterStatus.NOT_STARTED), false, 0);
@@ -113,6 +119,11 @@ public record WriterState(JsonObject mainObject,
         return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>("", fieldType, WRITING), this.writingTextField, this.characterCounter);
     }
 
+    public WriterState moveValueFieldToWritingStateForStringValue() {
+        return new WriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>("", STRING, WRITING), this.writingTextField, this.characterCounter);
+    }
+
+
     public WriterState moveValueFieldToNotStartedState() {
         return new WriterState(this.mainObject, this.tokenStack, UNKNOWN, this.identifier, new FieldState<>(new Object(), UNKNOWN, NOT_STARTED), this.writingTextField, this.characterCounter);
     }
@@ -186,5 +197,13 @@ public record WriterState(JsonObject mainObject,
         }
 
         return false;
+    }
+
+    @Override
+    public boolean isProcessingNonTextValue(char character) {
+        return getLastToken()
+                .filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN))
+                .isPresent() &&
+                findToken(character).filter(Token::isJsonFormatToken).isEmpty();
     }
 }
