@@ -1,6 +1,7 @@
 package nl.kooi.jsonparser.parser.state;
 
 import nl.kooi.jsonparser.json.JsonObject;
+import nl.kooi.jsonparser.monad.Conditional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,13 +10,18 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 import static nl.kooi.jsonparser.parser.state.FieldType.*;
+import static nl.kooi.jsonparser.parser.state.Token.BOOLEAN;
+import static nl.kooi.jsonparser.parser.state.Token.NUMBER;
+import static nl.kooi.jsonparser.parser.state.Token.*;
 import static nl.kooi.jsonparser.parser.state.WriterStatus.*;
+import static nl.kooi.jsonparser.parser.util.ParserUtil.findToken;
+import static nl.kooi.jsonparser.parser.util.ParserUtil.isIn;
 
 public record ArrayWriterState(List<Object> array,
                                Stack<Token> tokenStack,
-                               FieldState<?> currentValue,
+                               FieldState<Object> currentValue,
                                boolean writingTextField,
-                               int characterCounter) {
+                               int characterCounter) implements JsonWriterState {
 
     public ArrayWriterState() {
         this(null, new Stack<>(), new FieldState<>(new Object(), UNKNOWN, WriterStatus.NOT_STARTED), false, 0);
@@ -68,10 +74,6 @@ public record ArrayWriterState(List<Object> array,
 
 
     private ArrayWriterState updateValueField(Object newObjectToBeAdded) {
-        return updateValueField(newObjectToBeAdded, this.currentValue.fieldType());
-    }
-
-    private ArrayWriterState updateValueField(Object newObjectToBeAdded, FieldType fieldType) {
         return new ArrayWriterState(this.array, this.tokenStack, new FieldState<>(newObjectToBeAdded, this.currentValue.fieldType(), WRITING), this.writingTextField, this.characterCounter);
     }
 
@@ -99,20 +101,20 @@ public record ArrayWriterState(List<Object> array,
         return new ArrayWriterState(newArray, this.addToken(Token.SQ_BRACKET_CLOSED).tokenStack, new FieldState<>(new Object(), UNKNOWN, WriterStatus.NOT_STARTED), this.writingTextField, this.characterCounter);
     }
 
-    private Object formatType(FieldState<?> fieldState) {
-        if (fieldState.fieldType() == STRING || fieldState.fieldType() == OBJECT) {
-            return fieldState.value();
-        }
-
-        if (isNumber(fieldState.value().toString())) {
-            return handleNumberType(fieldState.value().toString());
-        } else {
-            return Boolean.valueOf(fieldState.value().toString());
-        }
+    private Object formatType(FieldState<Object> fieldState) {
+        return Conditional.apply((FieldState<Object> fs) -> fs.value())
+                .when(fs -> fs.fieldType() == STRING || fs.fieldType() == OBJECT)
+                .orApply(fs -> handleNumberType(fs.value().toString()))
+                .when(fs -> isNumber(fs.value().toString()))
+                .applyToOrElseGet(fieldState, () -> Boolean.valueOf(fieldState.value().toString()));
     }
 
     public ArrayWriterState moveValueFieldToWritingState(FieldType fieldType) {
         return new ArrayWriterState(this.array, this.tokenStack, new FieldState<>("", fieldType, WRITING), this.writingTextField, this.characterCounter);
+    }
+
+    public ArrayWriterState moveValueFieldToWritingStateForStringValue() {
+        return moveValueFieldToWritingState(STRING);
     }
 
     private Number handleNumberType(String numberString) {
@@ -134,5 +136,12 @@ public record ArrayWriterState(List<Object> array,
         } catch (NumberFormatException exc) {
             return false;
         }
+    }
+
+    public boolean isProcessingNonTextValue(char character) {
+        return getLastToken()
+                .filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN))
+                .isPresent() &&
+                findToken(character).filter(Token::isJsonFormatToken).isEmpty();
     }
 }
