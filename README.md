@@ -4,7 +4,7 @@ _A side project by Laurens van der Kooi ([@LvdKooi](https://github.com/LvdKooi))
 A JSON Parser which I'm working on, just for fun. It's ever evolving. It is also my playground to apply a monad which I'm currently developing (the Conditional -> please check out the _monad_ package in this project).
 
 ## Technical Description 
-The two main classes in this project are **JsonArrayParser** and **JsonObjectParser** in the _parser_ package. Both have one method _parse(String jsonString)_ which is able to deserialize a json-string to a ```List<Object>``` (when calling the JsonArrayParser), or a ```JsonObject``` (when calling the JsonObjectParser).
+The two main classes in this project are **JsonArrayParser** and **JsonObjectParser** in the _parser_ package. Both have one method _parse(String jsonString)_ which is able to deserialize a JSON String to a ```List<Object>``` (when calling the JsonArrayParser), or a ```JsonObject``` (when calling the JsonObjectParser).
 
 ### JsonObject and JsonNode
 The JsonObject is an object containing an array of JsonNodes:
