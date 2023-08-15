@@ -32,7 +32,7 @@ The JsonObjectParser transforms a JSON that looks like this:
 }
 ```
 
-To a JsonObject containing 3 JsonNodes:
+to a JsonObject containing 3 JsonNodes:
 * One with the identifier "firstName" containing a String object "John";
 * One with the identifier "lastName" containing a String object "Smith";
 * One with the identifier "age" containing an integral value of 25.
