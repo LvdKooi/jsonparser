@@ -1,10 +1,11 @@
 package nl.kooi.jsonparser.parser.command;
 
+import nl.kooi.jsonparser.parser.state.JsonWriterState;
 import nl.kooi.jsonparser.parser.state.Token;
 
 import static nl.kooi.jsonparser.parser.state.Token.*;
 
-public record TokenCommand<T>(
+public record TokenCommand<T extends JsonWriterState>(
         char[] stillToBeProcessed,
         Token token,
         char character,
