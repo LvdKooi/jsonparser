@@ -128,8 +128,8 @@ public class JsonArrayParser {
         var tokenCommand = new TokenCommand<ArrayWriterState>(stillToBeProcessed, character);
 
         return getOptionalTokenCommand(tokenCommand)
-                .applyToOrElseGet(state, () -> findToken(character).map(token -> new TokenCommand<>(stillToBeProcessed, token, character, state)));
-
+                .applyToOrElseGet(state,
+                        () -> findToken(character).map(token -> new TokenCommand<>(stillToBeProcessed, token, character, state)));
     }
 
     private static boolean hasWritingStatus(Supplier<WriterStatus> statusSupplier) {

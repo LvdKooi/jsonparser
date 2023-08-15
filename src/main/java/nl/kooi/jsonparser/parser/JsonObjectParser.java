@@ -51,7 +51,6 @@ public class JsonObjectParser {
         return handleToken(tokenCommand.token(), tokenCommand.state(), handler);
     }
 
-
     private static ObjectWriterState handleToken(Token token, ObjectWriterState state, UnaryOperator<ObjectWriterState> writerStateFunction) {
         return state.getLastToken().filter(tok -> token == tok).filter(tok -> tok == TEXT).map(tokenRemainsText -> writerStateFunction.apply(state)).orElseGet(() -> writerStateFunction.apply(state.addToken(token)));
     }
@@ -146,7 +145,9 @@ public class JsonObjectParser {
     private static Optional<TokenCommand<ObjectWriterState>> createTokenCommand(char[] stillToBeProcessed, char character, ObjectWriterState state) {
         var command = new TokenCommand<ObjectWriterState>(stillToBeProcessed, character);
 
-        return getOptionalTokenCommand(command).applyToOrElseGet(state, () -> findToken(character).map(token -> new TokenCommand<>(stillToBeProcessed, token, character, state)));
+        return getOptionalTokenCommand(command)
+                .applyToOrElseGet(state,
+                        () -> findToken(character).map(token -> new TokenCommand<>(stillToBeProcessed, token, character, state)));
     }
 
     private static boolean hasStatus(Supplier<WriterStatus> statusSupplier, WriterStatus match) {
