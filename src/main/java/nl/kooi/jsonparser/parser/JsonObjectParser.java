@@ -25,9 +25,10 @@ public class JsonObjectParser {
         var finalState = new ObjectWriterState();
 
         while (finalState.characterCounter() != objectString.length()) {
-            finalState = createTokenCommand(objectString.substring(finalState.characterCounter()).toCharArray(), objectString.charAt(finalState.characterCounter()), finalState)
+            finalState = createTokenCommand(objectString, finalState)
                     .map(JsonObjectParser::handleToken)
-                    .orElse(finalState).incrementCharacterCounter();
+                    .orElse(finalState)
+                    .incrementCharacterCounter();
         }
 
         return finalState.mainObject();
@@ -49,7 +50,11 @@ public class JsonObjectParser {
     }
 
     private static ObjectWriterState handleToken(Token token, ObjectWriterState state, UnaryOperator<ObjectWriterState> writerStateFunction) {
-        return state.getLastToken().filter(tok -> token == tok).filter(tok -> tok == TEXT).map(tokenRemainsText -> writerStateFunction.apply(state)).orElseGet(() -> writerStateFunction.apply(state.addToken(token)));
+        return state.getLastToken()
+                .filter(tok -> token == tok)
+                .filter(tok -> tok == TEXT)
+                .map(tokenRemainsText -> writerStateFunction.apply(state))
+                .orElseGet(() -> writerStateFunction.apply(state.addToken(token)));
     }
 
     private static ObjectWriterState writeCharacterToState(ObjectWriterState state, TokenCommand<ObjectWriterState> tokenCommand) {
@@ -139,7 +144,10 @@ public class JsonObjectParser {
         return hasWritingStatus(state::valueFieldStatus) ? state.moveValueFieldToFinishState() : state;
     }
 
-    private static Optional<TokenCommand<ObjectWriterState>> createTokenCommand(char[] stillToBeProcessed, char character, ObjectWriterState state) {
+    private static Optional<TokenCommand<ObjectWriterState>> createTokenCommand(String objectString, ObjectWriterState state) {
+        var stillToBeProcessed = objectString.substring(state.characterCounter()).toCharArray();
+        var character = objectString.charAt(state.characterCounter());
+
         var command = new TokenCommand<ObjectWriterState>(stillToBeProcessed, character);
 
         return getOptionalTokenCommand(command)

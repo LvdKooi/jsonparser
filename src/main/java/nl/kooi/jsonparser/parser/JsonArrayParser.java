@@ -24,9 +24,10 @@ public class JsonArrayParser {
         var finalState = new ArrayWriterState();
 
         while (finalState.characterCounter() != arrayString.length()) {
-            finalState = createTokenCommand(arrayString.substring(finalState.characterCounter()).toCharArray(), arrayString.charAt(finalState.characterCounter()), finalState)
+            finalState = createTokenCommand(arrayString, finalState)
                     .map(JsonArrayParser::handleToken)
-                    .orElse(finalState).incrementCharacterCounter();
+                    .orElse(finalState)
+                    .incrementCharacterCounter();
         }
 
         return finalState.array();
@@ -121,7 +122,10 @@ public class JsonArrayParser {
         return hasWritingStatus(state::valueFieldStatus) ? state.moveValueFieldToFinishState() : state;
     }
 
-    private static Optional<TokenCommand<ArrayWriterState>> createTokenCommand(char[] stillToBeProcessed, char character, ArrayWriterState state) {
+    private static Optional<TokenCommand<ArrayWriterState>> createTokenCommand(String arrayString, ArrayWriterState state) {
+        var stillToBeProcessed = arrayString.substring(state.characterCounter()).toCharArray();
+        var character = arrayString.charAt(state.characterCounter());
+
         var tokenCommand = new TokenCommand<ArrayWriterState>(stillToBeProcessed, character);
 
         return getOptionalTokenCommand(tokenCommand)
