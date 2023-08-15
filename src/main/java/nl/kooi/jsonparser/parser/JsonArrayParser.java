@@ -5,15 +5,12 @@ import nl.kooi.jsonparser.monad.Conditional;
 import nl.kooi.jsonparser.parser.command.TokenCommand;
 import nl.kooi.jsonparser.parser.state.ArrayWriterState;
 import nl.kooi.jsonparser.parser.state.Token;
-import nl.kooi.jsonparser.parser.state.WriterStatus;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static nl.kooi.jsonparser.parser.state.Token.TEXT;
@@ -130,13 +127,5 @@ public class JsonArrayParser {
         return getOptionalTokenCommand(tokenCommand)
                 .applyToOrElseGet(state,
                         () -> findToken(character).map(token -> new TokenCommand<>(stillToBeProcessed, token, character, state)));
-    }
-
-    private static boolean hasWritingStatus(Supplier<WriterStatus> statusSupplier) {
-        return statusSupplier.get() == WRITING;
-    }
-
-    private static boolean hasStatusNotIn(Supplier<WriterStatus> statusSupplier, WriterStatus... statuses) {
-        return !Set.of(statuses).contains(statusSupplier.get());
     }
 }

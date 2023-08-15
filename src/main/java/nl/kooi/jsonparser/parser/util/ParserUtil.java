@@ -4,15 +4,18 @@ import nl.kooi.jsonparser.monad.Conditional;
 import nl.kooi.jsonparser.parser.command.TokenCommand;
 import nl.kooi.jsonparser.parser.state.JsonWriterState;
 import nl.kooi.jsonparser.parser.state.Token;
+import nl.kooi.jsonparser.parser.state.WriterStatus;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static nl.kooi.jsonparser.parser.state.Token.D_QUOTE;
 import static nl.kooi.jsonparser.parser.state.Token.SPACE;
+import static nl.kooi.jsonparser.parser.state.WriterStatus.WRITING;
 
 public class ParserUtil {
 
@@ -106,5 +109,17 @@ public class ParserUtil {
                 .orApply(command::forBoolean)
                 .when(writerState -> writerState.isProcessingNonTextValue(command.character()))
                 .map(Optional::of);
+    }
+
+    public static boolean hasWritingStatus(Supplier<WriterStatus> statusSupplier) {
+        return hasStatus(statusSupplier, WRITING);
+    }
+
+    public static boolean hasStatus(Supplier<WriterStatus> statusSupplier, WriterStatus match) {
+        return statusSupplier.get() == match;
+    }
+
+    public static boolean hasStatusNotIn(Supplier<WriterStatus> statusSupplier, WriterStatus... statuses) {
+        return !Set.of(statuses).contains(statusSupplier.get());
     }
 }
