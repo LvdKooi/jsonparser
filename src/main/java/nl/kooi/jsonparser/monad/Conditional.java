@@ -18,22 +18,22 @@ public class Conditional<T, R> {
         this.currentFunction = currentFunction;
     }
 
-    private Conditional<T, R> addCondition(Predicate<T> predicate) {
-        Objects.requireNonNull(currentFunction, "A predicate can only be added after an apply(Function<T, R> callable) or orApply(Function<T, R> callable)");
-        Objects.requireNonNull(predicate, "Predicate is not nullable");
-
-        var map = new LinkedHashMap<>(actionMap);
-        map.put(predicate, currentFunction);
-
-        return new Conditional<>(map, null);
-    }
-
     public static <T, R> Conditional<T, R> apply(Function<T, R> callable) {
         return new Conditional<>(new LinkedHashMap<>(), callable);
     }
 
     public Conditional<T, R> when(Predicate<T> condition) {
-        return addCondition(condition);
+        assertCurrentFunctionAndPredicateAreValid(condition);
+
+        var map = new LinkedHashMap<>(actionMap);
+        map.put(condition, currentFunction);
+
+        return new Conditional<>(map, null);
+    }
+
+    private void assertCurrentFunctionAndPredicateAreValid(Predicate<T> predicate) {
+        Objects.requireNonNull(currentFunction, "A predicate can only be added after an apply(Function<T, R> callable) or orApply(Function<T, R> callable)");
+        Objects.requireNonNull(predicate, "Predicate is not nullable");
     }
 
     public Conditional<T, R> orApply(Function<T, R> callable) {
@@ -53,27 +53,25 @@ public class Conditional<T, R> {
         Objects.requireNonNull(supplier);
 
         return Optional.ofNullable(object)
-                .map(t -> actionMap
-                        .entrySet()
-                        .stream()
-                        .filter(entry -> entry.getKey().test(t))
-                        .findFirst()
-                        .map(Map.Entry::getValue)
-                        .map(fn -> fn.apply(t))
+                .map(t -> applyMatchingFunction(t)
                         .orElseGet(supplier))
                 .orElseGet(supplier);
     }
 
     public R applyToOrElse(T object, R defaultValue) {
         return Optional.ofNullable(object)
-                .map(t -> actionMap
-                        .entrySet()
-                        .stream()
-                        .filter(entry -> entry.getKey().test(t))
-                        .findFirst()
-                        .map(Map.Entry::getValue)
-                        .map(fn -> fn.apply(t))
+                .map(t -> applyMatchingFunction(t)
                         .orElse(defaultValue))
                 .orElse(defaultValue);
+    }
+
+    private Optional<R> applyMatchingFunction(T t) {
+        return actionMap
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().test(t))
+                .findFirst()
+                .map(Map.Entry::getValue)
+                .map(fn -> fn.apply(t));
     }
 }
