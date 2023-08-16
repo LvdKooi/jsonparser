@@ -52,26 +52,24 @@ public class Conditional<T, R> {
     public R applyToOrElseGet(T object, Supplier<? extends R> supplier) {
         Objects.requireNonNull(supplier);
 
-        return Optional.ofNullable(object)
-                .map(t -> applyMatchingFunction(t)
-                        .orElseGet(supplier))
-                .orElseGet(supplier);
+        return applyMatchingFunction(object)
+                .orElseGet(() -> obj -> supplier.get())
+                .apply(object);
     }
 
     public R applyToOrElse(T object, R defaultValue) {
         return Optional.ofNullable(object)
-                .map(t -> applyMatchingFunction(t)
-                        .orElse(defaultValue))
-                .orElse(defaultValue);
+                .flatMap(this::applyMatchingFunction)
+                .orElseGet(() -> obj -> defaultValue)
+                .apply(object);
     }
 
-    private Optional<R> applyMatchingFunction(T t) {
+    private Optional<Function<T, R>> applyMatchingFunction(T t) {
         return actionMap
                 .entrySet()
                 .stream()
                 .filter(entry -> entry.getKey().test(t))
                 .findFirst()
-                .map(Map.Entry::getValue)
-                .map(fn -> fn.apply(t));
+                .map(Map.Entry::getValue);
     }
 }

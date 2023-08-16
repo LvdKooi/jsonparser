@@ -34,4 +34,8 @@ public record TokenCommand<T extends JsonWriterState>(
     public TokenCommand<T> forText(T state) {
         return new TokenCommand<>(stillToBeProcessed, TEXT, character, state);
     }
+
+    public TokenCommand<T> forNull(T state) {
+        return new TokenCommand<>(stillToBeProcessed, NULL, character, state);
+    }
 }

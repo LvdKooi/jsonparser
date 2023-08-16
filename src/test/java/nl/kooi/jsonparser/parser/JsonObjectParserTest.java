@@ -34,6 +34,19 @@ class JsonObjectParserTest {
     }
 
     @Test
+    void oneNullField() {
+        var result = JsonObjectParser.parse("""
+                {
+                  "name": null
+                }""");
+
+        assertThat(result).isNotNull();
+        assertThat(result.jsonNodes().length).isEqualTo(1);
+        assertThat(result.jsonNodes()[0].identifier()).isEqualTo("name");
+        assertThat(result.jsonNodes()[0].content()).isNull();
+    }
+
+    @Test
     void oneStringFieldWithTokenCharacters() {
         var result = JsonObjectParser.parse("""
                 {
@@ -89,24 +102,27 @@ class JsonObjectParserTest {
     }
 
     @Test
-    void fourFieldsOfDifferentTypes() {
+    void fiveFieldsOfDifferentTypes() {
         var result = JsonObjectParser.parse("""
                 {
                   "name": "Laurens",
                   "age": 36,
                   "children": ["Anthony", "Marvin"],
+                  "pet": null,
                   "married": true
                 }""");
         assertThat(result).isNotNull();
-        assertThat(result.jsonNodes().length).isEqualTo(4);
+        assertThat(result.jsonNodes().length).isEqualTo(5);
         assertThat(result.jsonNodes()[0].identifier()).isEqualTo("name");
         assertThat(result.jsonNodes()[0].content()).isEqualTo("Laurens");
         assertThat(result.jsonNodes()[1].identifier()).isEqualTo("age");
         assertThat(result.jsonNodes()[1].content()).isEqualTo(36);
         assertThat(result.jsonNodes()[2].identifier()).isEqualTo("children");
         assertThat(result.jsonNodes()[2].content()).isEqualTo(List.of("Anthony", "Marvin"));
-        assertThat(result.jsonNodes()[3].identifier()).isEqualTo("married");
-        assertThat(result.jsonNodes()[3].content()).isEqualTo(true);
+        assertThat(result.jsonNodes()[3].identifier()).isEqualTo("pet");
+        assertThat(result.jsonNodes()[3].content()).isNull();
+        assertThat(result.jsonNodes()[4].identifier()).isEqualTo("married");
+        assertThat(result.jsonNodes()[4].content()).isEqualTo(true);
     }
 
     @Test

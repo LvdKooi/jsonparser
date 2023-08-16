@@ -115,10 +115,6 @@ public record ObjectWriterState(JsonObject mainObject,
         return updatedState.flushNode();
     }
 
-    public ObjectWriterState moveValueFieldToWritingState(FieldType fieldType) {
-        return new ObjectWriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>("", fieldType, WRITING), this.writingTextField, this.characterCounter);
-    }
-
     public ObjectWriterState moveValueFieldToWritingStateForStringValue() {
         return new ObjectWriterState(this.mainObject, this.tokenStack, this.currentFieldType, this.identifier, new FieldState<>("", STRING, WRITING), this.writingTextField, this.characterCounter);
     }
@@ -149,6 +145,10 @@ public record ObjectWriterState(JsonObject mainObject,
             return jsonNode;
         }
 
+        if (isNullValue(jsonNode)) {
+            return new JsonNode(jsonNode.identifier(), null);
+        }
+
         if (isInteger(jsonNode)) {
             return new JsonNode(jsonNode.identifier(), Integer.valueOf(((String) jsonNode.content()).trim()));
         }
@@ -164,45 +164,43 @@ public record ObjectWriterState(JsonObject mainObject,
         throw new UnsupportedOperationException("Other types than String, Boolean or Number are not supported yet");
     }
 
-    private boolean isDouble(JsonNode jsonNode) {
-        if (currentFieldType != STRING) {
-            try {
-                Double.valueOf(((String) jsonNode.content()).trim());
-                return true;
-            } catch (NumberFormatException exc) {
-                return false;
-            }
-        }
+    private boolean isNullValue(JsonNode jsonNode) {
+        return Optional.ofNullable(jsonNode)
+                .map(JsonNode::content)
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .map(String::trim)
+                .filter("null"::equals)
+                .isPresent();
+    }
 
-        return false;
+    private boolean isDouble(JsonNode jsonNode) {
+        try {
+            Double.valueOf(((String) jsonNode.content()).trim());
+            return true;
+        } catch (NumberFormatException exc) {
+            return false;
+        }
     }
 
     private boolean isInteger(JsonNode jsonNode) {
-        if (currentFieldType != STRING) {
-            try {
-                Integer.valueOf(((String) jsonNode.content()).trim());
-                return true;
-            } catch (NumberFormatException exc) {
-                return false;
-            }
+        try {
+            Integer.valueOf(((String) jsonNode.content()).trim());
+            return true;
+        } catch (NumberFormatException exc) {
+            return false;
         }
-
-        return false;
     }
 
     private boolean isBoolean(JsonNode jsonNode) {
-        if (currentFieldType != STRING) {
-            var value = ((String) jsonNode.content()).trim();
-            return "true".equals(value) || "false".equals(value);
-        }
-
-        return false;
+        var value = ((String) jsonNode.content()).trim();
+        return "true".equals(value) || "false".equals(value);
     }
 
     @Override
     public boolean isProcessingNonTextValue(char character) {
         return getLastToken()
-                .filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN))
+                .filter(isIn(SEMI_COLON, SQ_BRACKET_OPEN, SPACE, NUMBER, BOOLEAN, NULL))
                 .isPresent() &&
                 findToken(character).filter(Token::isJsonFormatToken).isEmpty();
     }

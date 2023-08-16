@@ -6,10 +6,7 @@ import nl.kooi.jsonparser.parser.state.JsonWriterState;
 import nl.kooi.jsonparser.parser.state.Token;
 import nl.kooi.jsonparser.parser.state.WriterStatus;
 
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -107,8 +104,14 @@ public class ParserUtil {
                 .orApply(command::forNumber)
                 .when(writerState -> writerState.isProcessingNonTextValue(command.character()) && isNumberRelatedCharacter(command.character()))
                 .orApply(command::forBoolean)
+                .when(writerState -> writerState.isProcessingNonTextValue(command.character()) && isNullRelatedCharacter(command.character()))
+                .orApply(command::forNull)
                 .when(writerState -> writerState.isProcessingNonTextValue(command.character()))
                 .map(Optional::of);
+    }
+
+    private static boolean isNullRelatedCharacter(char character) {
+        return List.of('n', 'u', 'l').contains(character);
     }
 
     public static boolean hasWritingStatus(Supplier<WriterStatus> statusSupplier) {
