@@ -4,6 +4,7 @@ import nl.kooi.jsonparser.json.JsonNode;
 import nl.kooi.jsonparser.json.JsonObject;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class JsonArrayParserTest {
     @Test
     void aMixedArray() {
         var result = JsonArrayParser.parse("""
-                [1, true, "hello", -2, -3.86, false, "world",   
+                [1, true, "hello", -2, -3.86, false, "world", null,   
                   {
                     "name": "Andreas",
                     "sign": "Scorpius"
@@ -48,7 +49,7 @@ public class JsonArrayParserTest {
                   """);
 
 
-        assertThat(result).hasSize(8);
+        assertThat(result).hasSize(9);
         assertThat(result.get(0)).isEqualTo(1);
         assertThat(result.get(1)).isEqualTo(true);
         assertThat(result.get(2)).isEqualTo("hello");
@@ -56,9 +57,10 @@ public class JsonArrayParserTest {
         assertThat(result.get(4)).isEqualTo(-3.86);
         assertThat(result.get(5)).isEqualTo(false);
         assertThat(result.get(6)).isEqualTo("world");
-        assertThat(result.get(7)).isInstanceOf(JsonObject.class);
+        assertThat(result.get(7)).isNull();
+        assertThat(result.get(8)).isInstanceOf(JsonObject.class);
 
-        var jsonObject = (JsonObject) result.get(7);
+        var jsonObject = (JsonObject) result.get(8);
 
         assertThat(jsonObject.jsonNodes()).hasSize(2);
         assertThat(jsonObject.jsonNodes()[0].identifier()).isEqualTo("name");
@@ -96,6 +98,15 @@ public class JsonArrayParserTest {
                 """);
 
         assertThat(result).isNotNull().hasSize(2).isEqualTo(List.of(12, 9));
+    }
+
+    @Test
+    void anArrayWithNulls() {
+        var result = JsonArrayParser.parse("""
+                [null, null]
+                """);
+
+        assertThat(result).isNotNull().hasSize(2).isEqualTo(Arrays.asList(null, null));
     }
 
     @Test

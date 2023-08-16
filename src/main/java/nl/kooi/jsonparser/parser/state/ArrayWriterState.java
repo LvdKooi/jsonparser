@@ -106,7 +106,13 @@ public record ArrayWriterState(List<Object> array,
                 .when(fs -> fs.fieldType() == STRING || fs.fieldType() == OBJECT)
                 .orApply(fs -> handleNumberType(fs.value().toString()))
                 .when(fs -> isNumber(fs.value().toString()))
+                .orApply(fs -> null)
+                .when(fs -> isNullValue(fs.value().toString()))
                 .applyToOrElseGet(fieldState, () -> Boolean.valueOf(fieldState.value().toString()));
+    }
+
+    private boolean isNullValue(String value) {
+        return value.equals("null");
     }
 
     public ArrayWriterState moveValueFieldToWritingState(FieldType fieldType) {

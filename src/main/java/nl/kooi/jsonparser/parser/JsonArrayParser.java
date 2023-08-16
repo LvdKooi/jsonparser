@@ -38,7 +38,7 @@ public class JsonArrayParser {
             case BRACE_OPEN -> state -> JsonArrayParser.handleOpenBrace(state, tokenCommand);
             case D_QUOTE -> JsonArrayParser::handleDoubleQuote;
             case COMMA -> JsonArrayParser::handleComma;
-            case TEXT, BOOLEAN, NUMBER -> ArrayWriterState -> writeCharacterToState(tokenCommand.state(), tokenCommand);
+            case TEXT, BOOLEAN, NUMBER, NULL -> state -> writeCharacterToState(tokenCommand.state(), tokenCommand);
             case SQ_BRACKET_OPEN -> state -> handleOpenSquareBracket(state, tokenCommand);
             case SQ_BRACKET_CLOSED -> JsonArrayParser::handleClosedSquareBracket;
             default -> UnaryOperator.identity();

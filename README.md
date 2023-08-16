@@ -53,8 +53,9 @@ will result in an JsonObject, containing 1 JsonNode with identifier "children" a
 * Integer number
 * Floating point number
 * Array (of single or mixed types)
+* Null
 
 ### Yet to be implemented
-* Null
+* Error handling
 
 Please check out the **JsonArrayParserTest** and **JsonObjectParserTest** in the ```jsonparser/src/test``` folder for proven behaviour.

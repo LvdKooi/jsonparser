@@ -41,7 +41,7 @@ public class JsonObjectParser {
             case BRACE_CLOSED -> JsonObjectParser::handleClosingBrace;
             case SEMI_COLON -> JsonObjectParser::handleSemiColon;
             case COMMA -> JsonObjectParser::handleComma;
-            case TEXT, BOOLEAN, NUMBER -> writerState -> writeCharacterToState(writerState, tokenCommand);
+            case TEXT, BOOLEAN, NUMBER, NULL -> writerState -> writeCharacterToState(writerState, tokenCommand);
             case SQ_BRACKET_OPEN -> writerState -> handleOpenSquareBracket(writerState, tokenCommand);
             default -> UnaryOperator.identity();
         };
@@ -84,7 +84,8 @@ public class JsonObjectParser {
     }
 
     private static Optional<ObjectWriterState> updateStateWithDoubleQuoteForValueField(ObjectWriterState updatedState) {
-        return Conditional.apply(ObjectWriterState::moveValueFieldToWritingStateForStringValue)
+        return Conditional
+                .apply(ObjectWriterState::moveValueFieldToWritingStateForStringValue)
                 .when(isFinishedWritingIdentifier())
                 .orApply(ObjectWriterState::moveValueFieldToFinishState)
                 .when(isWritingNonArrayValueField())

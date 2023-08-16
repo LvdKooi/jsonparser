@@ -13,7 +13,8 @@ public enum Token {
     TEXT(null, false),
     BOOLEAN(null, false),
     NUMBER(null, false),
-    SPACE(' ', false);
+    SPACE(' ', false),
+    NULL(null, false);
 
     private final Character matchingCharacter;
     private final boolean jsonFormatToken;
