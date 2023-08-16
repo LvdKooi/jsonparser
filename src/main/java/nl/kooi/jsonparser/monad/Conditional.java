@@ -52,19 +52,19 @@ public class Conditional<T, R> {
     public R applyToOrElseGet(T object, Supplier<? extends R> supplier) {
         Objects.requireNonNull(supplier);
 
-        return applyMatchingFunction(object)
+        return findMatchingFunction(object)
                 .orElseGet(() -> obj -> supplier.get())
                 .apply(object);
     }
 
     public R applyToOrElse(T object, R defaultValue) {
         return Optional.ofNullable(object)
-                .flatMap(this::applyMatchingFunction)
+                .flatMap(this::findMatchingFunction)
                 .orElseGet(() -> obj -> defaultValue)
                 .apply(object);
     }
 
-    private Optional<Function<T, R>> applyMatchingFunction(T t) {
+    private Optional<Function<T, R>> findMatchingFunction(T t) {
         return actionMap
                 .entrySet()
                 .stream()
