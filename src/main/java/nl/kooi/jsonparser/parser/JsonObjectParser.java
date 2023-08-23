@@ -2,7 +2,7 @@ package nl.kooi.jsonparser.parser;
 
 
 import nl.kooi.jsonparser.json.JsonObject;
-import nl.kooi.jsonparser.monad.Conditional;
+import io.github.lvdkooi.Conditional;
 import nl.kooi.jsonparser.parser.command.TokenCommand;
 import nl.kooi.jsonparser.parser.state.ObjectWriterState;
 import nl.kooi.jsonparser.parser.state.Token;

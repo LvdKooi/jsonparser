@@ -1,7 +1,7 @@
 package nl.kooi.jsonparser.parser.state;
 
 import nl.kooi.jsonparser.json.JsonObject;
-import nl.kooi.jsonparser.monad.Conditional;
+import io.github.lvdkooi.Conditional;
 
 import java.util.ArrayList;
 import java.util.List;

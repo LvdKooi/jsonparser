@@ -23,6 +23,11 @@
 			<version>3.24.2</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>io.github.lvdkooi</groupId>
+			<artifactId>conditional</artifactId>
+			<version>1.0.0</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

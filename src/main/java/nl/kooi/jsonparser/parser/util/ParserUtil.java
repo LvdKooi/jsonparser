@@ -1,6 +1,6 @@
 package nl.kooi.jsonparser.parser.util;
 
-import nl.kooi.jsonparser.monad.Conditional;
+import io.github.lvdkooi.Conditional;
 import nl.kooi.jsonparser.parser.command.TokenCommand;
 import nl.kooi.jsonparser.parser.state.JsonWriterState;
 import nl.kooi.jsonparser.parser.state.Token;
