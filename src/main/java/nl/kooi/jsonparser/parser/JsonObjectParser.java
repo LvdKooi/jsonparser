@@ -1,8 +1,8 @@
 package nl.kooi.jsonparser.parser;
 
 
-import nl.kooi.jsonparser.json.JsonObject;
 import io.github.lvdkooi.Conditional;
+import nl.kooi.jsonparser.json.JsonObject;
 import nl.kooi.jsonparser.parser.command.TokenCommand;
 import nl.kooi.jsonparser.parser.state.ObjectWriterState;
 import nl.kooi.jsonparser.parser.state.Token;
@@ -13,6 +13,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
+import static io.github.lvdkooi.Conditional.applyIf;
 import static nl.kooi.jsonparser.parser.state.FieldType.ARRAY;
 import static nl.kooi.jsonparser.parser.state.Token.TEXT;
 import static nl.kooi.jsonparser.parser.state.WriterStatus.*;
@@ -70,9 +71,9 @@ public class JsonObjectParser {
     }
 
     private static ObjectWriterState handleComma(ObjectWriterState state) {
-        return Conditional.apply(ObjectWriterState::moveValueFieldToFinishState)
-                .when(writerState -> hasStatusNotIn(writerState::valueFieldStatus, NOT_STARTED))
-                .applyToOrElse(state, state);
+        return Conditional.of(state)
+                .firstMatching(applyIf(writerState -> hasStatusNotIn(writerState::valueFieldStatus, NOT_STARTED), ObjectWriterState::moveValueFieldToFinishState))
+                .orElse(state);
     }
 
     private static ObjectWriterState handleDoubleQuote(ObjectWriterState state) {
@@ -84,13 +85,13 @@ public class JsonObjectParser {
     }
 
     private static Optional<ObjectWriterState> updateStateWithDoubleQuoteForValueField(ObjectWriterState updatedState) {
-        return Conditional
-                .apply(ObjectWriterState::moveValueFieldToWritingStateForStringValue)
-                .when(isFinishedWritingIdentifier())
-                .orApply(ObjectWriterState::moveValueFieldToFinishState)
-                .when(isWritingNonArrayValueField())
+        return Conditional.of(updatedState)
+                .firstMatching(
+                        applyIf(isFinishedWritingIdentifier(), ObjectWriterState::moveValueFieldToWritingStateForStringValue),
+                        applyIf(isWritingNonArrayValueField(), ObjectWriterState::moveValueFieldToFinishState)
+                )
                 .map(Optional::of)
-                .applyToOrElseGet(updatedState, Optional::empty);
+                .orElseGet(Optional::empty);
     }
 
     private static Predicate<ObjectWriterState> isFinishedWritingIdentifier() {
@@ -102,20 +103,21 @@ public class JsonObjectParser {
     }
 
     private static Optional<ObjectWriterState> updateStateWithDoubleQuoteForIdentifier(ObjectWriterState updatedState) {
-        return Conditional.apply(ObjectWriterState::moveIdentifierToWritingState)
-                .when(writerState -> hasStatus(writerState::identifierStatus, NOT_STARTED))
-                .orApply(ObjectWriterState::moveIdentifierToFinishState)
-                .when(writerState -> hasStatus(writerState::identifierStatus, WRITING))
+        return Conditional.of(updatedState)
+                .firstMatching(
+                        applyIf(writerState -> hasStatus(writerState::identifierStatus, NOT_STARTED), ObjectWriterState::moveIdentifierToWritingState),
+                        applyIf(writerState -> hasStatus(writerState::identifierStatus, WRITING), ObjectWriterState::moveIdentifierToFinishState)
+                )
                 .map(Optional::of)
-                .applyToOrElseGet(updatedState, Optional::empty);
+                .orElseGet(Optional::empty);
     }
 
     private static ObjectWriterState handleOpenBrace(ObjectWriterState state, TokenCommand<ObjectWriterState> tokenCommand) {
-        return Conditional.apply(ObjectWriterState::addInitialMainObject)
-                .when(writerState -> Objects.isNull(writerState.mainObject()) && hasStatusNotIn(writerState::valueFieldStatus, WRITING, FINISHED))
-                .orApply(Function.identity())
-                .when(writerState -> Objects.isNull(writerState.mainObject()))
-                .applyToOrElseGet(state, () -> handleNestedObject(state, tokenCommand.stillToBeProcessed()));
+        return Conditional.of(state)
+                .firstMatching(
+                        applyIf(writerState -> Objects.isNull(writerState.mainObject()) && hasStatusNotIn(writerState::valueFieldStatus, WRITING, FINISHED), ObjectWriterState::addInitialMainObject),
+                        applyIf(writerState -> Objects.isNull(writerState.mainObject()), Function.identity()))
+                .orElseGet(() -> handleNestedObject(state, tokenCommand.stillToBeProcessed()));
     }
 
     private static ObjectWriterState handleNestedObject(ObjectWriterState state, char[] stillToBeProcessed) {
@@ -151,8 +153,8 @@ public class JsonObjectParser {
 
         var command = new TokenCommand<ObjectWriterState>(stillToBeProcessed, character);
 
-        return getOptionalTokenCommand(command)
-                .applyToOrElseGet(state,
+        return getOptionalTokenCommand(state, command)
+                .orElseGet(
                         () -> findToken(character).map(token -> new TokenCommand<>(stillToBeProcessed, token, character, state)));
     }
 }

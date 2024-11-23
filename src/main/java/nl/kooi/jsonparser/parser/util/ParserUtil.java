@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static io.github.lvdkooi.Conditional.applyIf;
 import static nl.kooi.jsonparser.parser.state.Token.D_QUOTE;
 import static nl.kooi.jsonparser.parser.state.Token.SPACE;
 import static nl.kooi.jsonparser.parser.state.WriterStatus.WRITING;
@@ -95,18 +96,15 @@ public class ParserUtil {
         return t -> Set.of(tokens).contains(t);
     }
 
-    public static <T extends JsonWriterState> Conditional<T, Optional<TokenCommand<T>>> getOptionalTokenCommand(TokenCommand<T> command) {
+    public static <T extends JsonWriterState> Conditional<T, Optional<TokenCommand<T>>> getOptionalTokenCommand(T state, TokenCommand<T> command) {
         return Conditional
-                .apply(command::forText)
-                .when(writerState -> writerState.writingTextField() && !isDoubleQuote(command.character()))
-                .orApply(command::forSpace)
-                .when(writerState -> !writerState.writingTextField() && isSpace(command.character()))
-                .orApply(command::forNumber)
-                .when(writerState -> writerState.isProcessingNonTextValue(command.character()) && isNumberRelatedCharacter(command.character()))
-                .orApply(command::forBoolean)
-                .when(writerState -> writerState.isProcessingNonTextValue(command.character()) && isNullRelatedCharacter(command.character()))
-                .orApply(command::forNull)
-                .when(writerState -> writerState.isProcessingNonTextValue(command.character()))
+                .of(state)
+                .firstMatching(
+                        applyIf(writerState -> writerState.writingTextField() && !isDoubleQuote(command.character()), command::forText),
+                        applyIf(writerState -> !writerState.writingTextField() && isSpace(command.character()), command::forSpace),
+                        applyIf(writerState -> writerState.isProcessingNonTextValue(command.character()) && isNumberRelatedCharacter(command.character()), command::forNumber),
+                        applyIf(writerState -> writerState.isProcessingNonTextValue(command.character()) && isNullRelatedCharacter(command.character()), command::forBoolean),
+                        applyIf(writerState -> writerState.isProcessingNonTextValue(command.character()), command::forNull))
                 .map(Optional::of);
     }
 

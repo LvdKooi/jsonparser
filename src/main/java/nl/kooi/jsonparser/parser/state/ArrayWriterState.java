@@ -1,7 +1,7 @@
 package nl.kooi.jsonparser.parser.state;
 
-import nl.kooi.jsonparser.json.JsonObject;
 import io.github.lvdkooi.Conditional;
+import nl.kooi.jsonparser.json.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
+import static io.github.lvdkooi.Conditional.applyIf;
 import static nl.kooi.jsonparser.parser.state.FieldType.*;
 import static nl.kooi.jsonparser.parser.state.Token.BOOLEAN;
 import static nl.kooi.jsonparser.parser.state.Token.NUMBER;
@@ -102,13 +103,12 @@ public record ArrayWriterState(List<Object> array,
     }
 
     private Object formatType(FieldState<Object> fieldState) {
-        return Conditional.apply((FieldState<Object> fs) -> fs.value())
-                .when(fs -> fs.fieldType() == STRING || fs.fieldType() == OBJECT)
-                .orApply(fs -> handleNumberType(fs.value().toString()))
-                .when(fs -> isNumber(fs.value().toString()))
-                .orApply(fs -> null)
-                .when(fs -> isNullValue(fs.value().toString()))
-                .applyToOrElseGet(fieldState, () -> Boolean.valueOf(fieldState.value().toString()));
+        return Conditional.of(fieldState)
+                .firstMatching(
+                        applyIf(fs -> fs.fieldType() == STRING || fs.fieldType() == OBJECT, FieldState::value),
+                        applyIf(fs -> isNumber(fs.value().toString()), fs -> handleNumberType(fs.value().toString())),
+                        applyIf(fs -> isNullValue(fs.value().toString()), fs -> null))
+                .orElseGet(() -> Boolean.valueOf(fieldState.value().toString()));
     }
 
     private boolean isNullValue(String value) {

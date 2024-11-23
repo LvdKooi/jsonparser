@@ -13,6 +13,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
+import static io.github.lvdkooi.Conditional.applyIf;
 import static nl.kooi.jsonparser.parser.state.Token.TEXT;
 import static nl.kooi.jsonparser.parser.state.WriterStatus.*;
 import static nl.kooi.jsonparser.parser.util.ParserUtil.*;
@@ -61,9 +62,11 @@ public class JsonArrayParser {
     }
 
     private static ArrayWriterState handleComma(ArrayWriterState state) {
-        return Conditional.apply(ArrayWriterState::addValueToArray)
-                .when(arrayWriterState -> hasStatusNotIn(arrayWriterState::valueFieldStatus, NOT_STARTED))
-                .applyToOrElse(state, state);
+        return Conditional.of(state)
+                .firstMatching(
+                        applyIf(arrayWriterState -> hasStatusNotIn(arrayWriterState::valueFieldStatus, NOT_STARTED), ArrayWriterState::addValueToArray)
+                )
+                .orElse(state);
     }
 
     private static ArrayWriterState handleDoubleQuote(ArrayWriterState state) {
@@ -73,12 +76,13 @@ public class JsonArrayParser {
     }
 
     private static Optional<ArrayWriterState> updateStateWithDoubleQuoteForValueField(ArrayWriterState updatedState) {
-        return Conditional.apply(ArrayWriterState::moveValueFieldToWritingStateForStringValue)
-                .when(state -> hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED))
-                .orApply(ArrayWriterState::moveValueFieldToFinishState)
-                .when(status -> hasWritingStatus(status::valueFieldStatus))
-                .map(Optional::of)
-                .applyToOrElseGet(updatedState, Optional::empty);
+        return Conditional.of(updatedState)
+                .firstMatching(
+                        applyIf(state -> hasStatusNotIn(state::valueFieldStatus, WRITING, FINISHED), ArrayWriterState::moveValueFieldToWritingStateForStringValue),
+                        applyIf(status -> hasWritingStatus(status::valueFieldStatus), ArrayWriterState::moveValueFieldToFinishState)
+                )
+                .map(Optional::of).orElseGet(Optional::empty);
+
     }
 
     private static ArrayWriterState handleOpenBrace(ArrayWriterState state, TokenCommand<ArrayWriterState> tokenCommand) {
@@ -93,11 +97,12 @@ public class JsonArrayParser {
     }
 
     private static ArrayWriterState handleOpenSquareBracket(ArrayWriterState state, TokenCommand<ArrayWriterState> command) {
-        return Conditional.apply(ArrayWriterState::addInitialArray)
-                .when(hasNotStartedHandlingAnArray())
-                .orApply(Function.identity())
-                .when(Objects::isNull)
-                .applyToOrElseGet(state, () -> handleNestedArray(state, command.stillToBeProcessed()));
+        return Conditional.of(state)
+                .firstMatching(
+                        applyIf(hasNotStartedHandlingAnArray(), ArrayWriterState::addInitialArray),
+                        applyIf(Objects::isNull, Function.identity())
+                )
+                .orElseGet(() -> handleNestedArray(state, command.stillToBeProcessed()));
     }
 
     private static Predicate<ArrayWriterState> hasNotStartedHandlingAnArray() {
@@ -128,8 +133,8 @@ public class JsonArrayParser {
 
         var tokenCommand = new TokenCommand<ArrayWriterState>(stillToBeProcessed, character);
 
-        return getOptionalTokenCommand(tokenCommand)
-                .applyToOrElseGet(state,
+        return getOptionalTokenCommand(state, tokenCommand)
+                .orElseGet(
                         () -> findToken(character).map(token -> new TokenCommand<>(stillToBeProcessed, token, character, state)));
     }
 }
